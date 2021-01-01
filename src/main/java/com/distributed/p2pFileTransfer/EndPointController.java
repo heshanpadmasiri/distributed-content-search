@@ -1,4 +1,4 @@
-package com.distributed.p2psearch;
+package com.distributed.p2pFileTransfer;
 
 import org.apache.tomcat.util.buf.HexUtils;
 
