@@ -36,6 +36,7 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
     public FileDownloadResult downloadFile(HttpURLConnection httpURLConnection,  String fileHash, int fileSize) throws IOException {
         InputStream inputStream = httpURLConnection.getInputStream();
         // Byte reader
+        // TODO: Get download directory from config
         String saveFilePath = "/home/kalana/distributed/content/local_storage/"+ fileName;
 
         FileOutputStream outputStream = new FileOutputStream(saveFilePath);
@@ -46,7 +47,7 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
                 outputStream.write(buffer, 0, bytesRead);
             }
             System.out.println("Downloaded "+saveFilePath);
-            String hexHash = HashGenerator.generateHash(saveFilePath);
+            String hexHash = Storage.getFileHash(saveFilePath);
             if (hexHash.equals(fileHash)) {
                 System.out.println("File hashes match");
                 return new FileDownloadResult("success", 0);
