@@ -1,15 +1,21 @@
 package com.distributed.p2pFileTransfer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.Future;
-
+import java.util.concurrent.*;
+import java.net.URL;
+import java.net.HttpURLConnection;
 //todo: implement the end point code here or under this
 public class FileHandler {
-    private AbstractFileTransferService fileTransferService;
-    private AbstractStorage storage;
+    //private AbstractFileTransferService fileTransferService;
+    //private AbstractStorage storage;
+
+
 
     /**
      * Concrete implementation of file download
@@ -18,18 +24,35 @@ public class FileHandler {
      * @param destination download destination
      * @return FileDownload result which encapsulate errors if they occur during download
      */
-    protected Future<FileDownloadResult> downloadFile(Node source, String fileName, Path destination){
-        // it may make sense to directly throw the exception here rather than at the file transfer service
-        throw new NotImplementedException();
+    protected Future<FileDownloadResult> downloadFile(Node source, String fileName, Path destination) {
+
+        FileDownloadCallable task = new FileDownloadCallable(source,fileName);
+
+        ExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+        Future<FileDownloadResult> result = executorService.submit(task);
+        if (result.isDone()){
+            try{
+                System.out.println(result.get());
+                System.exit(0);
+            } catch (InterruptedException | ExecutionException e){
+                e.printStackTrace();
+            }
+        }
+        return result;
     }
 
+
+
+
+    //TODO: check cache space before starting automated download
+
     /**
-     * Used to search for files in local storage
+     * Used to search for files in local storage and cache
      * @param query search query
      * @return list of file names matching the query
      */
-    protected List<String> searchForFile(String query){
-        return storage.searchForFile(query);
-    }
+//    protected List<String> searchForFile(String query){
+//        return storage.searchForFile(query);
+//    }
 
 }
