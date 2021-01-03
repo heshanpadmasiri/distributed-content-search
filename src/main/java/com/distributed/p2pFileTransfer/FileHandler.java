@@ -1,15 +1,12 @@
 package com.distributed.p2pFileTransfer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.concurrent.*;
-import java.net.URL;
-import java.net.HttpURLConnection;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
 //todo: implement the end point code here or under this
 public class FileHandler {
     //private AbstractFileTransferService fileTransferService;

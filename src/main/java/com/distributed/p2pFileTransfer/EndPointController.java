@@ -1,41 +1,29 @@
 package com.distributed.p2pFileTransfer;
 
-import org.apache.tomcat.util.buf.HexUtils;
-
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.URLConnection;
-
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-
-import org.springframework.util.FileCopyUtils;
 
 @RestController
 public class EndPointController {
 
-    @RequestMapping("/rest")
-    public String helloFile(@RequestParam(value ="filename") String filename){
-        return filename;
-    }
-    @RequestMapping("/hello")
-    public String helloWorld(){
-        return "hello!";
-    }
     @RequestMapping("/file/{name:.+}")
-    public void getFile(HttpServletRequest req, HttpServletResponse res, @PathVariable("name") String name) throws IOException {
-        System.out.println("Filename: " + name);
-        String filepath = "/home/kalana/sites";
+    public ResponseEntity<Resource> downloadFile(HttpServletResponse res, @PathVariable("name") String fileName) throws IOException {
+
+        String filepath = "/home/kalana/distributed/content/uploads/"+ fileName;
+        System.out.println("Attempting to download " + filepath);
         File file = new File(filepath);
-        MessageDigest md = null;
+
         if (file.exists()) {
             String mimeType = URLConnection.guessContentTypeFromName(file.getName());
             if (mimeType == null) {
@@ -46,19 +34,17 @@ public class EndPointController {
             res.setHeader("Content-Disposition", String.format("inline; filename=\"" + file.getName() + "\""));
             res.setContentLength((int) file.length());
 
-            InputStream input = new BufferedInputStream(new FileInputStream(file));
-            try{
-                md = MessageDigest.getInstance("md5");
-                md.update(Files.readAllBytes(Paths.get(filepath)));
-                byte[] hash = md.digest();
-                String hexHash = HexUtils.toHexString(hash);
-                res.setHeader("Hash",hexHash);
-            }
-            catch (NoSuchAlgorithmException e){
-                e.printStackTrace();
-            }
-            FileCopyUtils.copy(input, res.getOutputStream());
+            InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
 
+            String hexHash = HashGenerator.generateHash(filepath);
+            res.setHeader("Hash",hexHash);
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+        }
+        else{
+            return ResponseEntity.notFound().build();
         }
     }
 }

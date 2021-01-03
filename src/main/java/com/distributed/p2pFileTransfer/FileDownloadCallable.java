@@ -1,6 +1,6 @@
 package com.distributed.p2pFileTransfer;
 
-import java.io.InputStream;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.Callable;
@@ -16,22 +16,62 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
 
     @Override
     public FileDownloadResult call() throws Exception {
-        // it may make sense to directly throw the exception here rather than at the file transfer service
-        // Create a neat value object to hold the URL
-        StringBuilder urlString = new StringBuilder("http://" + source.getIpAddress().getHostAddress() + ":" + source.getPort() + "/" + fileName);
-        URL url = new URL(urlString.toString());
+        FileDownloadResult result;
 
-        // Open a connection(?) on the URL(??) and cast the response(???)
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        URL url = new URL("http://" + source.getIpAddress().getHostAddress() + ":" + source.getPort() + "/file/" + fileName);
 
-        // Now it's "open", we can set the request method, headers etc.
-        //connection.setRequestProperty("accept", "application/json");
+        HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();;
 
-        // This line makes the request
-        InputStream responseStream = connection.getInputStream();
-
-        System.out.println(responseStream.read());
-        responseStream.close();
-        return new FileDownloadResult("hello", 0);
+        String fileHash = httpURLConnection.getHeaderField("Hash");
+        int fileSize = httpURLConnection.getContentLength();
+        if (fileHash != null){
+             result = downloadFile(httpURLConnection, fileHash, fileSize);
+        }
+        else{
+            result = new FileDownloadResult("Hash not avaialable",1);
+        }
+        return result;
     }
+
+    public FileDownloadResult downloadFile(HttpURLConnection httpURLConnection,  String fileHash, int fileSize) throws IOException {
+        InputStream inputStream = httpURLConnection.getInputStream();
+        // Byte reader
+        String saveFilePath = "/home/kalana/distributed/content/local_storage/"+ fileName;
+
+        FileOutputStream outputStream = new FileOutputStream(saveFilePath);
+        int bytesRead = -1;
+        byte[] buffer = new byte[fileSize];
+        if (httpURLConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+            System.out.println("Downloaded "+saveFilePath);
+            String hexHash = HashGenerator.generateHash(saveFilePath);
+            if (hexHash.equals(fileHash)) {
+                System.out.println("File hashes match");
+                return new FileDownloadResult("success", 0);
+            } else {
+                System.out.println("File hashes do not match");
+                return new FileDownloadResult("Hash do not match", 1);
+            }
+
+        } else {
+            return new FileDownloadResult(httpURLConnection.getResponseMessage(), 1);
+        }
+    }
+        //String reader
+//        if ("text".equals(type)){
+//
+//            if (httpURLConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+//                try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))) {
+//                    String line;
+//                    while ((line = bufferedReader.readLine()) != null) {
+//                        System.out.println(line);
+//                    }
+//                    return new FileDownloadResult("success",0);
+//                }
+//            } else {
+//                // ... do something with unsuccessful response
+//            }
+//        }
 }
