@@ -19,7 +19,7 @@ class MainTests {
         FileHandler fHandler = new FileHandler();
         InetAddress add = InetAddress.getByName("127.0.0.1");
         Node myNode = new Node(add, 8080);
-        fHandler.downloadFile(myNode, "sites.csv", Paths.get(""));
+        fHandler.downloadFile(myNode, "s", Paths.get(""));
     }
 
     /**
@@ -32,6 +32,9 @@ class MainTests {
         matchingFiles.forEach(System.out::println);
     }
 
+    /**
+     * Create required space in the cache storage
+     */
     @Test
     void testCacheSpace() {
         FileHandler fileHandler = new FileHandler();

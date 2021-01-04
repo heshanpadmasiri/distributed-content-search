@@ -27,7 +27,7 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
         URL url = new URL("http://" + source.getIpAddress().getHostAddress() + ":" + source.getPort() + "/file/" + fileName);
 
         HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
-        ;
+
 
         String fileHash = httpURLConnection.getHeaderField("Hash");
         int fileSize = httpURLConnection.getContentLength();
@@ -59,38 +59,28 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
         byte[] buffer = new byte[fileSize];
         if (httpURLConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
             //TODO: Fix this to work wth empty files
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, bytesRead);
-            }
-            System.out.println("Downloaded " + saveFilePath);
-            String hexHash = Storage.getFileHash(saveFilePath);
-            if (hexHash.equals(fileHash)) {
-                System.out.println("File hashes match");
-                return new FileDownloadResult("success", 0);
+            //int bytestRead = inputStream.read(buffer);
+            if (inputStream.available() != 0) {
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
+                System.out.println("Downloaded " + saveFilePath);
+                String hexHash = Storage.getFileHash(saveFilePath);
+                if (hexHash.equals(fileHash)) {
+                    System.out.println("File hashes match");
+                    return new FileDownloadResult("success", 0);
+                } else {
+                    System.out.println("File hashes do not match");
+                    return new FileDownloadResult("Hash do not match", 1);
+                }
             } else {
-                System.out.println("File hashes do not match");
-                return new FileDownloadResult("Hash do not match", 1);
+                return new FileDownloadResult("Input stream empty", 0);
             }
+
 
         } else {
             return new FileDownloadResult(httpURLConnection.getResponseMessage(), 1);
         }
-
-        //String reader
-//        if ("text".equals(type)){
-//
-//            if (httpURLConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-//                try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))) {
-//                    String line;
-//                    while ((line = bufferedReader.readLine()) != null) {
-//                        System.out.println(line);
-//                    }
-//                    return new FileDownloadResult("success",0);
-//                }
-//            } else {
-//                // ... do something with unsuccessful response
-//            }
-//        }
     }
 
 }
