@@ -75,8 +75,8 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
         } else {
             return new FileDownloadResult(httpURLConnection.getResponseMessage(), 1);
         }
-    }
-    //String reader
+
+        //String reader
 //        if ("text".equals(type)){
 //
 //            if (httpURLConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
@@ -91,4 +91,6 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
 //                // ... do something with unsuccessful response
 //            }
 //        }
+    }
+
 }

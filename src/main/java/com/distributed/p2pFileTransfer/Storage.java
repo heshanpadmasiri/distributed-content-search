@@ -4,7 +4,6 @@ import org.apache.tomcat.util.buf.HexUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -13,11 +12,51 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
+
 public class Storage {
     // TODO: Get file directory from config
     private static final String dir = "/home/kalana/distributed/content/";
     private static final String cacheDir = dir + "cache_storage/";
     private static final String localDir = dir + "local_storage/";
+    private static final long fullCacheSize = 10000000; // 10MB
+
+    /**
+     * Make enough space in the cache directory to download the new file
+     *
+     * @param reqSpace Size of the new file in bytes
+     */
+    public static void makeCacheSpace(long reqSpace) {
+        File cacheDirFile = new File(cacheDir);
+        long cacheSize = FileUtils.sizeOfDirectory(cacheDirFile);
+        while ((fullCacheSize - cacheSize) < reqSpace) {
+            deleteOldestFile(cacheDirFile);
+            cacheSize = FileUtils.sizeOfDirectory(cacheDirFile);
+        }
+    }
+
+    /**
+     * Delete oldest file in the directory
+     *
+     * @param directory Directory
+     */
+    public static void deleteOldestFile(File directory) {
+        File[] dirFiles = directory.listFiles();
+        long oldestDate = Long.MAX_VALUE;
+        File oldestFile = null;
+        if (dirFiles != null) {
+            for (File f : dirFiles) {
+                if (f.lastModified() < oldestDate) {
+                    oldestDate = f.lastModified();
+                    oldestFile = f;
+                }
+            }
+            if (oldestFile != null) {
+                System.out.println("Deleted file " + oldestFile.getName());
+                oldestFile.delete();
+            }
+        }
+    }
 
     /**
      * Search the directory for the file existence

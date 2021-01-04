@@ -32,4 +32,10 @@ class MainTests {
         matchingFiles.forEach(System.out::println);
     }
 
+    @Test
+    void testCacheSpace() {
+        FileHandler fileHandler = new FileHandler();
+        fileHandler.makeCacheSpace(3000000);
+    }
+
 }

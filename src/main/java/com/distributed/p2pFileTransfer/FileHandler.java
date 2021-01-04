@@ -35,7 +35,14 @@ public class FileHandler {
         return result;
     }
 
-    //TODO: check cache space before starting automated download
+    /**
+     * Make enough space in cache for the new file
+     *
+     * @param fileSize Size of the new file
+     */
+    protected void makeCacheSpace(long fileSize) {
+        Storage.makeCacheSpace(fileSize);
+    }
 
     /**
      * Used to search for files in local storage and cache
