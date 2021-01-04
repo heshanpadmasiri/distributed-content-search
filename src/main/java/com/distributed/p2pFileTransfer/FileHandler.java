@@ -2,17 +2,14 @@ package com.distributed.p2pFileTransfer;
 
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-//todo: implement the end point code here or under this
 public class FileHandler {
     //private AbstractFileTransferService fileTransferService;
-    //private AbstractStorage storage;
-
-
 
     /**
      * Concrete implementation of file download
@@ -30,16 +27,12 @@ public class FileHandler {
         if (result.isDone()){
             try{
                 System.out.println(result.get());
-                System.exit(0);
             } catch (InterruptedException | ExecutionException e){
                 e.printStackTrace();
             }
         }
         return result;
     }
-
-
-
 
     //TODO: check cache space before starting automated download
 
@@ -48,8 +41,8 @@ public class FileHandler {
      * @param query search query
      * @return list of file names matching the query
      */
-//    protected List<String> searchForFile(String query){
-//        return storage.searchForFile(query);
-//    }
+    protected List<String> searchForFile(String query){
+        return Storage.searchForFile(query);
+    }
 
 }

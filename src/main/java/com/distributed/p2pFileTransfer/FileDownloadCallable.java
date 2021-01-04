@@ -43,6 +43,7 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
         int bytesRead = -1;
         byte[] buffer = new byte[fileSize];
         if (httpURLConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+            //TODO: Fix this to work wth empty files
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 outputStream.write(buffer, 0, bytesRead);
             }
