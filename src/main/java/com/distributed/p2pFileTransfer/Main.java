@@ -7,8 +7,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 public class Main {
-    public static void main(String[] args)  {
+    public static void main(String[] args) {
         SpringApplication.run(com.distributed.p2pFileTransfer.Main.class, args);
-        System.out.println("Web server listening to incoming connections...");
+        System.out.println("File server listening to incoming connections...");
     }
 }

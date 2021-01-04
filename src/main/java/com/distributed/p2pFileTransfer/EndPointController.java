@@ -21,7 +21,8 @@ public class EndPointController {
 
     /**
      * Serve the requested File
-     * @param res response
+     *
+     * @param res      response
      * @param fileName Name of the file
      * @return ResponseEntity with File
      * @throws IOException
@@ -46,7 +47,7 @@ public class EndPointController {
         InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
 
         String hexHash = Storage.getFileHash(fileName);
-        res.setHeader("Hash",hexHash);
+        res.setHeader("Hash", hexHash);
 
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
@@ -56,12 +57,13 @@ public class EndPointController {
 
     /**
      * Search for the requested file in self storage
-     * @param res Response
+     *
+     * @param res      Response
      * @param fileName Name of the file
      * @return ResponseEntity Filenames that inclue the search query
      */
     @RequestMapping("/search/{name:.+}")
-    public ResponseEntity<String> searchFile(HttpServletResponse res, @PathVariable("name") String fileName){
+    public ResponseEntity<String> searchFile(HttpServletResponse res, @PathVariable("name") String fileName) {
         List<String> matchingNames = Storage.searchForFile(fileName);
         String json = new Gson().toJson(matchingNames);
         return ResponseEntity.ok()

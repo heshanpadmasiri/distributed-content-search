@@ -9,35 +9,50 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
     private Node source;
     private String fileName;
 
-    FileDownloadCallable(Node source, String filename){
+    FileDownloadCallable(Node source, String filename) {
         this.source = source;
         this.fileName = filename;
     }
 
+    /**
+     * Create a callable for making a GET request to download the file
+     *
+     * @return FileDownloadResult Download status
+     * @throws IOException
+     */
     @Override
-    public FileDownloadResult call() throws Exception {
+    public FileDownloadResult call() throws IOException {
         FileDownloadResult result;
 
         URL url = new URL("http://" + source.getIpAddress().getHostAddress() + ":" + source.getPort() + "/file/" + fileName);
 
-        HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();;
+        HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+        ;
 
         String fileHash = httpURLConnection.getHeaderField("Hash");
         int fileSize = httpURLConnection.getContentLength();
-        if (fileHash != null){
-             result = downloadFile(httpURLConnection, fileHash, fileSize);
-        }
-        else{
-            result = new FileDownloadResult("Hash not avaialable",1);
+        if (fileHash != null) {
+            result = downloadFile(httpURLConnection, fileHash, fileSize);
+        } else {
+            result = new FileDownloadResult("Hash not avaialable", 1);
         }
         return result;
     }
 
-    public FileDownloadResult downloadFile(HttpURLConnection httpURLConnection,  String fileHash, int fileSize) throws IOException {
+    /**
+     * Download the file and verify the hash
+     *
+     * @param httpURLConnection
+     * @param fileHash          Hash of the file sent from the server
+     * @param fileSize          Size of the file
+     * @return FileDownloadResult Download status
+     * @throws IOException
+     */
+    public FileDownloadResult downloadFile(HttpURLConnection httpURLConnection, String fileHash, int fileSize) throws IOException {
         InputStream inputStream = httpURLConnection.getInputStream();
         // Byte reader
         // TODO: Get download directory from config
-        String saveFilePath = "/home/kalana/distributed/content/local_storage/"+ fileName;
+        String saveFilePath = "/home/kalana/distributed/content/local_storage/" + fileName;
 
         FileOutputStream outputStream = new FileOutputStream(saveFilePath);
         int bytesRead = -1;
@@ -47,7 +62,7 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 outputStream.write(buffer, 0, bytesRead);
             }
-            System.out.println("Downloaded "+saveFilePath);
+            System.out.println("Downloaded " + saveFilePath);
             String hexHash = Storage.getFileHash(saveFilePath);
             if (hexHash.equals(fileHash)) {
                 System.out.println("File hashes match");
@@ -61,7 +76,7 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
             return new FileDownloadResult(httpURLConnection.getResponseMessage(), 1);
         }
     }
-        //String reader
+    //String reader
 //        if ("text".equals(type)){
 //
 //            if (httpURLConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {

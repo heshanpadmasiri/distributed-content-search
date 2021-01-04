@@ -13,21 +13,22 @@ public class FileHandler {
 
     /**
      * Concrete implementation of file download
-     * @param source node from which to download the file
-     * @param fileName name of the file
+     *
+     * @param source      node from which to download the file
+     * @param fileName    name of the file
      * @param destination download destination
      * @return FileDownload result which encapsulate errors if they occur during download
      */
     protected Future<FileDownloadResult> downloadFile(Node source, String fileName, Path destination) {
 
-        FileDownloadCallable task = new FileDownloadCallable(source,fileName);
+        FileDownloadCallable task = new FileDownloadCallable(source, fileName);
 
         ExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
         Future<FileDownloadResult> result = executorService.submit(task);
-        if (result.isDone()){
-            try{
+        if (result.isDone()) {
+            try {
                 System.out.println(result.get());
-            } catch (InterruptedException | ExecutionException e){
+            } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }
         }
@@ -38,10 +39,11 @@ public class FileHandler {
 
     /**
      * Used to search for files in local storage and cache
+     *
      * @param query search query
      * @return list of file names matching the query
      */
-    protected List<String> searchForFile(String query){
+    protected List<String> searchForFile(String query) {
         return Storage.searchForFile(query);
     }
 

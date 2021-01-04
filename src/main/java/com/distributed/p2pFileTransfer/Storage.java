@@ -19,95 +19,112 @@ public class Storage {
     private static final String cacheDir = dir + "cache_storage/";
     private static final String localDir = dir + "local_storage/";
 
-    public static String searchDirectory(String searchDir,String fileName){
+    /**
+     * Search the directory for the file existence
+     *
+     * @param searchDir Directory to search
+     * @param fileName  File to search
+     * @return String file path if exists else null
+     */
+    public static String searchDirectory(String searchDir, String fileName) {
         String[] searchDirListing = new File(searchDir).list();
-        if(searchDirListing != null){
-            for (String filename: searchDirListing){
-                if (filename.matches(fileName)){
+        if (searchDirListing != null) {
+            for (String filename : searchDirListing) {
+                if (filename.matches(fileName)) {
                     return searchDir + fileName;
                 }
             }
         }
         return null;
     }
-    public static String getFilePath(String fileName){
+
+    /**
+     * Get path of the file
+     *
+     * @param fileName Name of the file
+     * @return String File Path
+     */
+    public static String getFilePath(String fileName) {
         String filepath = searchDirectory(localDir, fileName);
-        if (filepath == null){
+        if (filepath == null) {
             filepath = searchDirectory(cacheDir, fileName);
         }
         return filepath;
+
     }
+
     /**
      * Used to search for file matching a given file Name in the storage
      *
-     * @param fileName search query
+     * @param query search query
      * @return List of file names matching the query
      */
-    public static List<String> searchForFile(String fileName) {
+    public static List<String> searchForFile(String query) {
 
         String[] cacheFileDir = new File(cacheDir).list();
         String[] localFileDir = new File(localDir).list();
         List<String> matches = new ArrayList<>();
 
-        String regex = "(.*)" + fileName + "(.*)";
-        if (cacheFileDir != null){
-            for (String filename: cacheFileDir){
-                if (filename.matches(regex)){
+        String regex = "(.*)" + query + "(.*)";
+        if (cacheFileDir != null) {
+            for (String filename : cacheFileDir) {
+                if (filename.matches(regex)) {
                     matches.add(filename);
                 }
             }
         }
-       if(localFileDir != null){
-           for (String filename: localFileDir){
-               if (filename.matches(regex)){
-                   matches.add(filename);
-               }
-           }
-       }
-
+        if (localFileDir != null) {
+            for (String filename : localFileDir) {
+                if (filename.matches(regex)) {
+                    matches.add(filename);
+                }
+            }
+        }
         return matches;
     }
 
     /**
      * Used to get a file from storage
+     *
      * @param fileName name of the file
      * @return file
      * @throws FileNotFoundException if no file matches the file name exactly
      */
-    public static File getFile(String fileName) throws FileNotFoundException{
+    public static File getFile(String fileName) throws FileNotFoundException {
         String filePath = Storage.getFilePath(fileName);
         File file = new File(filePath);
-        if (file.exists()){
+        if (file.exists()) {
             return file;
-        }
-        else{
+        } else {
             throw new FileNotFoundException();
         }
-    };
+    }
+
     /**
      * Used to get the hash of file from storage
+     *
      * @param fileName name of the file
      * @return SHA-1 hash of the file
      * @throws FileNotFoundException if no file matches the file name exactly
      */
-    public static String getFileHash(String fileName) throws FileNotFoundException{
+    public static String getFileHash(String fileName) throws FileNotFoundException {
         String filePath = Storage.getFilePath(fileName);
         File file = new File(filePath);
-        if (file.exists()){
-            try{
+        if (file.exists()) {
+            try {
                 MessageDigest md = MessageDigest.getInstance("SHA-1");
                 md.update(Files.readAllBytes(Paths.get(filePath)));
                 byte[] hash = md.digest();
                 return HexUtils.toHexString(hash);
-            }
-            catch (NoSuchAlgorithmException | IOException e){
+            } catch (NoSuchAlgorithmException | IOException e) {
                 e.printStackTrace();
                 return null;
             }
-        }
-        else {
+        } else {
             throw new FileNotFoundException();
         }
 
-    };
+    }
+
+    ;
 }
