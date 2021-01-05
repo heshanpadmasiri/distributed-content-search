@@ -1,6 +1,5 @@
 package com.distributed.p2pFileTransfer;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 //todo: make this thread safe
 class QueryQueue<T> {
@@ -11,6 +10,6 @@ class QueryQueue<T> {
      * @return
      */
     boolean isInQueue(T query){
-        throw new NotImplementedException();
+        throw new RuntimeException("not implemented");
     }
 }
