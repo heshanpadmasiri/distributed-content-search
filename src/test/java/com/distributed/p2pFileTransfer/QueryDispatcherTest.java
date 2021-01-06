@@ -88,7 +88,7 @@ class QueryDispatcherTest {
 
   @Test
   void dispatchOne() {
-    String message = "test";
+    String message = "0047 SER 129.82.62.142 5070 \"Lord of the rings\"";
     Query query = Query.createQuery(message, socketListener.toNode());
     this.queryDispatcher.dispatchOne(query);
     try {

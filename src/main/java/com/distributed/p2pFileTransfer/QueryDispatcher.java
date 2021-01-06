@@ -3,21 +3,25 @@ package com.distributed.p2pFileTransfer;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 class QueryDispatcher {
   private final AbstractFileTransferService fileTransferService;
   private DatagramSocket socket;
+  private ExecutorService executorService;
   //    private final QueryQueue;
 
   QueryDispatcher(AbstractFileTransferService fileTransferService, int port)
       throws SocketException {
     this.fileTransferService = fileTransferService;
     socket = new DatagramSocket(port);
+    executorService = Executors.newCachedThreadPool();
   }
 
   /**
@@ -27,16 +31,16 @@ class QueryDispatcher {
    * @return result of query
    */
   Future<QueryResult> dispatchOne(Query query) {
-    byte[] data = query.body.getBytes(StandardCharsets.UTF_8);
-    DatagramPacket sendDatagram =
-        new DatagramPacket(data, data.length, query.destination.getSocketAddress());
-    try {
-      socket.send(sendDatagram);
-    } catch (IOException e) {
-      e.printStackTrace();
-      throw new RuntimeException(e);
+    Executor executor;
+    String queryType = query.body.split(" ")[1];
+    switch (queryType){
+      case "SER":
+        executor = new SearchQueryExecutor(query,socket);
+        break;
+      default:
+        throw new IllegalStateException("Unexpected value: " + queryType);
     }
-    return null;
+    return executorService.submit(executor);
   }
 
   /**
@@ -60,3 +64,4 @@ class QueryDispatcher {
     return null;
   }
 }
+
