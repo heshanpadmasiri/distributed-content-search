@@ -35,7 +35,7 @@ class QueryDispatcher {
     String queryType = query.body.split(" ")[1];
     switch (queryType){
       case "SER":
-        executor = new SearchQueryExecutor(query,socket);
+        executor = new SearchQueryExecutor(query,socket, fileTransferService.getQueryListener());
         break;
       default:
         throw new IllegalStateException("Unexpected value: " + queryType);
