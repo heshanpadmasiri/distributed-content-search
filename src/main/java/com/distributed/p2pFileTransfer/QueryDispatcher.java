@@ -20,7 +20,7 @@ class QueryDispatcher {
   QueryDispatcher(AbstractFileTransferService fileTransferService, int port)
       throws SocketException {
     this.fileTransferService = fileTransferService;
-    socket = new DatagramSocket(port);
+    socket = fileTransferService.getQueryListener().getSocket();
     executorService = Executors.newCachedThreadPool();
   }
 

@@ -18,6 +18,7 @@ public abstract class Executor implements Callable<QueryResult> {
     this.socket = socket;
     this.message = query.body;
     this.destination = query.destination;
+    this.queryListener = queryListener;
   }
 
   public abstract void notify(String message);
@@ -25,7 +26,7 @@ public abstract class Executor implements Callable<QueryResult> {
 
 class SearchQueryExecutor extends Executor {
 
-  private Object monitor;
+  private final Object monitor = new Object();
   private String response;
   private boolean responseReceived = false;
 
@@ -38,7 +39,7 @@ class SearchQueryExecutor extends Executor {
     response = message;
     responseReceived = true;
     synchronized (monitor){
-      notifyAll();
+      monitor.notifyAll();
     }
   }
 

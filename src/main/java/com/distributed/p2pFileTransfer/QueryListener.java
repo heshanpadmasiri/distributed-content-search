@@ -22,6 +22,10 @@ class QueryListener implements Runnable {
     socket = new DatagramSocket(port);
   }
 
+  public DatagramSocket getSocket() {
+    return socket;
+  }
+
   @Override
   public void run() {
     while (!terminate) {
