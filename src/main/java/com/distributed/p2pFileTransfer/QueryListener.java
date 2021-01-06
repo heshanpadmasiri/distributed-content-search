@@ -3,6 +3,7 @@ package com.distributed.p2pFileTransfer;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.SocketException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -14,10 +15,11 @@ class QueryListener implements Runnable {
   private boolean terminate = false;
   private HashMap<Node, List<Executor>> pendingExecutors;
 
-  public QueryListener(AbstractFileTransferService fileTransferService, int port) {
+  public QueryListener(AbstractFileTransferService fileTransferService, int port) throws SocketException {
     this.fileTransferService = fileTransferService;
     executorService = Executors.newCachedThreadPool();
     pendingExecutors = new HashMap<>();
+    socket = new DatagramSocket(port);
   }
 
   @Override
