@@ -16,9 +16,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class SearchQueryExecutorTest {
-  final int LISTENER_PORT = 5555;
-  final int SENDER_PORT = 5556;
+class AcknowledgedQueryExecutorTest {
+  final int LISTENER_PORT = 6555;
+  final int SENDER_PORT = 6556;
   AbstractFileTransferService fileTransferService;
   QueryListener queryListener;
   Thread queryListenerThread;
@@ -54,7 +54,7 @@ class SearchQueryExecutorTest {
     DatagramSocket sender = queryListener.getSocket();
     Node receiver = new Node(InetAddress.getLoopbackAddress(), LISTENER_PORT);
     Query query = Query.createQuery(message, receiver);
-    SearchQueryExecutor searchQueryExecutor = new SearchQueryExecutor(query, sender, queryListener);
+    AcknowledgedQueryExecutor searchQueryExecutor = new AcknowledgedQueryExecutor(query, sender, queryListener);
     Future<QueryResult> queryResultFuture = executorService.submit(searchQueryExecutor);
     QueryResult result = queryResultFuture.get();
     assertEquals(result.state, 0);
@@ -101,6 +101,7 @@ class SearchQueryExecutorTest {
           throw new RuntimeException("IO exception in socket listener");
         }
       }
+      socket.close();
     }
 
     public void stop() {

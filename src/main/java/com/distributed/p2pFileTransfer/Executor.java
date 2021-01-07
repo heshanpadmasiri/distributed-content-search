@@ -24,13 +24,13 @@ public abstract class Executor implements Callable<QueryResult> {
   public abstract void notify(String message);
 }
 
-class SearchQueryExecutor extends Executor {
+class AcknowledgedQueryExecutor extends Executor {
 
   private final Object monitor = new Object();
   private String response;
   private boolean responseReceived = false;
 
-  public SearchQueryExecutor(Query query, DatagramSocket socket, QueryListener queryListener) {
+  public AcknowledgedQueryExecutor(Query query, DatagramSocket socket, QueryListener queryListener) {
     super(query, socket, queryListener);
   }
 

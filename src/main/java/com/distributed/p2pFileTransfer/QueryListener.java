@@ -41,6 +41,7 @@ class QueryListener implements Runnable {
         throw new RuntimeException("IO exception in socket listener");
       }
     }
+    socket.close();
   }
 
   /**

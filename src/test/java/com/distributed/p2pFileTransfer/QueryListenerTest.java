@@ -19,8 +19,8 @@ class QueryListenerTest {
     AbstractFileTransferService fileTransferService;
     QueryListener queryListener;
     Thread queryListenerThread;
-    final int QUERY_LISTENER_PORT = 5555;
-    final int SENDER_PORT = 5556;
+    final int QUERY_LISTENER_PORT = 7555;
+    final int SENDER_PORT = 7556;
     @BeforeEach
     void setUp() throws SocketException {
        fileTransferService = mock(AbstractFileTransferService.class);
@@ -46,7 +46,7 @@ class QueryListenerTest {
         byte[] data = message.getBytes(StandardCharsets.UTF_8);
         DatagramPacket datagramPacket = new DatagramPacket(data, data.length, receiver.getSocketAddress());
         sender.send(datagramPacket);
-        TimeUnit.SECONDS.sleep(5);
+        TimeUnit.SECONDS.sleep(1);
         verify(executor).notify(message);
     }
 }

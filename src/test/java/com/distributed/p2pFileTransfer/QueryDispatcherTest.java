@@ -1,8 +1,6 @@
 package com.distributed.p2pFileTransfer;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -12,13 +10,16 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class QueryDispatcherTest {
 
   SocketListener socketListener;
   QueryDispatcher queryDispatcher;
   AbstractFileTransferService fileTransferService;
   Thread socketThread;
+  QueryListener queryListener;
 
   private class SocketListener implements Runnable {
     private String lastMessage;
@@ -44,6 +45,7 @@ class QueryDispatcherTest {
           throw new RuntimeException("IO exception in socket listener");
         }
       }
+      socket.close();
     }
 
     public String getLastMessage() {
@@ -60,7 +62,7 @@ class QueryDispatcherTest {
   }
 
   @BeforeEach
-  void setUp() {
+  void setUp() throws SocketException {
     try {
       socketListener = new SocketListener(5555);
       socketThread = new Thread(socketListener);
@@ -69,6 +71,8 @@ class QueryDispatcherTest {
       throw new RuntimeException("Failed to start the socket listener");
     }
     fileTransferService = mock(AbstractFileTransferService.class);
+    queryListener = new QueryListener(fileTransferService, 5556);
+    when(fileTransferService.getQueryListener()).thenReturn(queryListener);
     try {
       queryDispatcher = new QueryDispatcher(fileTransferService, 5556);
     } catch (SocketException e) {
@@ -87,6 +91,7 @@ class QueryDispatcherTest {
   }
 
   @Test
+  @Order(1)
   void dispatchOne() {
     String message = "0047 SER 129.82.62.142 5070 \"Lord of the rings\"";
     Query query = Query.createQuery(message, socketListener.toNode());
@@ -95,15 +100,10 @@ class QueryDispatcherTest {
       TimeUnit.SECONDS.sleep(5);
       String last = socketListener.getLastMessage();
       assertNotNull(last);
-      assertTrue(message.equals(last));
+      assertEquals(last, message);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
   }
 
-  @Test
-  void dispatchAll() {}
-
-  @Test
-  void dispatchAny() {}
 }

@@ -1,12 +1,8 @@
 package com.distributed.p2pFileTransfer;
 
-import java.io.IOException;
-import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -35,7 +31,7 @@ class QueryDispatcher {
     String queryType = query.body.split(" ")[1];
     switch (queryType){
       case "SER":
-        executor = new SearchQueryExecutor(query,socket, fileTransferService.getQueryListener());
+        executor = new AcknowledgedQueryExecutor(query,socket, fileTransferService.getQueryListener());
         break;
       default:
         throw new IllegalStateException("Unexpected value: " + queryType);
