@@ -5,8 +5,11 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Callable;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public abstract class Executor implements Callable<QueryResult> {
+  final Logger logger;
   Query query;
   String message;
   Node destination;
@@ -19,6 +22,7 @@ public abstract class Executor implements Callable<QueryResult> {
     this.message = query.body;
     this.destination = query.destination;
     this.queryListener = queryListener;
+    logger = Logger.getLogger(UnAcknowledgedQueryExecutor.class.getName());
   }
 
   public abstract void notify(String message);
@@ -30,22 +34,25 @@ class AcknowledgedQueryExecutor extends Executor {
   private String response;
   private boolean responseReceived = false;
 
-  public AcknowledgedQueryExecutor(Query query, DatagramSocket socket, QueryListener queryListener) {
+  public AcknowledgedQueryExecutor(
+      Query query, DatagramSocket socket, QueryListener queryListener) {
     super(query, socket, queryListener);
   }
 
   @Override
   public void notify(String message) {
+    //todo : check if the message is a response for the message we send
     response = message;
     responseReceived = true;
-    synchronized (monitor){
+    logger.log(Level.INFO, String.format("Message received %s", message));
+    synchronized (monitor) {
       monitor.notifyAll();
     }
     queryListener.unRegisterForResponse(destination, this);
   }
 
   @Override
-  public QueryResult call(){
+  public QueryResult call() {
     byte[] data = query.body.getBytes(StandardCharsets.UTF_8);
     DatagramPacket sendDatagram =
         new DatagramPacket(data, data.length, query.destination.getSocketAddress());
@@ -55,8 +62,8 @@ class AcknowledgedQueryExecutor extends Executor {
     } catch (IOException e) {
       return new QueryResult(String.format("Failed to send message due to : %s", e), 1, query);
     }
-    while(!responseReceived){
-      synchronized (monitor){
+    while (!responseReceived) {
+      synchronized (monitor) {
         try {
           monitor.wait();
         } catch (InterruptedException e) {
@@ -65,5 +72,35 @@ class AcknowledgedQueryExecutor extends Executor {
       }
     }
     return new QueryResult(response, 0, query);
+  }
+}
+
+class UnAcknowledgedQueryExecutor extends Executor {
+  Logger logger;
+
+  public UnAcknowledgedQueryExecutor(
+      Query query, DatagramSocket socket, QueryListener queryListener) {
+    super(query, socket, queryListener);
+  }
+
+  @Override
+  public void notify(String message) {
+    logger.log(
+        Level.WARNING,
+        String.format(
+            "Unacknowledged query executor message received Message received %s", message));
+  }
+
+  @Override
+  public QueryResult call() throws Exception {
+    byte[] data = query.body.getBytes(StandardCharsets.UTF_8);
+    DatagramPacket sendDatagram =
+            new DatagramPacket(data, data.length, query.destination.getSocketAddress());
+    try {
+      socket.send(sendDatagram);
+    } catch (IOException e) {
+      return new QueryResult(String.format("Failed to send message due to : %s", e), 1, query);
+    }
+    return new QueryResult("Message send successfully", 0, query);
   }
 }

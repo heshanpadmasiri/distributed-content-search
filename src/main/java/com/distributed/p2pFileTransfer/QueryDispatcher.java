@@ -37,6 +37,13 @@ class QueryDispatcher {
       case "REG":
         executor = new AcknowledgedQueryExecutor(query,socket, fileTransferService.getQueryListener());
         break;
+      case "SEROK":
+      case "UNREGOK":
+      case "JOINOK":
+      case "LEAVEOK":
+      case "REGOK":
+        executor = new UnAcknowledgedQueryExecutor(query,socket, fileTransferService.getQueryListener());
+        break;
       default:
         throw new IllegalStateException("Unexpected value: " + queryType);
     }

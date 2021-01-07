@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,7 +43,7 @@ class AcknowledgedQueryExecutorTest {
 
   @Test
   void checkQueryDispatch()
-      throws UnknownHostException, SocketException, ExecutionException, InterruptedException {
+      throws SocketException, ExecutionException, InterruptedException {
 
     String message = "0047 SER 129.82.62.142 5070 \"Lord of the rings\"";
     String expectedResponse = "0114 SEROK 3 129.82.128.1 2301 baby_go_home.mp3 baby_come_back.mp3 baby.mpeg";
@@ -63,49 +64,4 @@ class AcknowledgedQueryExecutorTest {
     listenerThread.join();
   }
 
-  private class SocketListener implements Runnable {
-    private String expectedMessage;
-    private String response;
-    private DatagramSocket socket;
-    private boolean terminate = false;
-    Node node;
-
-    public SocketListener(int port, String expectedMessage, String response)
-        throws SocketException {
-      socket = new DatagramSocket(port);
-      node = new Node(socket.getInetAddress(), port);
-      this.expectedMessage = expectedMessage;
-      this.response = response;
-    }
-
-    @Override
-    public void run() {
-      while (!terminate) {
-        byte[] buffer = new byte[65536];
-        DatagramPacket incoming = new DatagramPacket(buffer, buffer.length);
-        try {
-          socket.receive(incoming);
-          String message = new String(buffer).split("\0")[0];
-          if (message.equals(expectedMessage)) {
-            byte[] responseData = response.getBytes(StandardCharsets.UTF_8);
-            DatagramPacket responseDatagram =
-                new DatagramPacket(
-                    responseData, responseData.length, incoming.getAddress(), incoming.getPort());
-            socket.send(responseDatagram);
-            this.stop();
-          } else {
-            throw new RuntimeException(String.format("Invalid message received : %s", message));
-          }
-          this.terminate = true;
-        } catch (IOException e) {
-          throw new RuntimeException("IO exception in socket listener");
-        }
-      }
-      socket.close();
-    }
-
-    public void stop() {
-      terminate = true;
-    }
-  }
 }
