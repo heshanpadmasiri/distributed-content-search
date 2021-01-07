@@ -31,6 +31,10 @@ class QueryDispatcher {
     String queryType = query.body.split(" ")[1];
     switch (queryType){
       case "SER":
+      case "UNREG":
+      case "JOIN":
+      case "LEAVE":
+      case "REG":
         executor = new AcknowledgedQueryExecutor(query,socket, fileTransferService.getQueryListener());
         break;
       default:

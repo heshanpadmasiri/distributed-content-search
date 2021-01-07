@@ -6,13 +6,13 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class QueryDispatcherTest {
 
   SocketListener socketListener;
@@ -22,7 +22,7 @@ class QueryDispatcherTest {
   QueryListener queryListener;
 
   private class SocketListener implements Runnable {
-    private String lastMessage;
+    private String lastMessage = "<None>";
     private DatagramSocket socket;
     private boolean terminate = false;
     private Node node;
@@ -39,8 +39,9 @@ class QueryDispatcherTest {
         DatagramPacket incoming = new DatagramPacket(buffer, buffer.length);
         try {
           socket.receive(incoming);
-          lastMessage = new String(buffer).split("\0")[0];
-          this.terminate = true;
+          synchronized (lastMessage){
+            lastMessage = new String(buffer).split("\0")[0];
+          }
         } catch (IOException e) {
           throw new RuntimeException("IO exception in socket listener");
         }
@@ -49,7 +50,11 @@ class QueryDispatcherTest {
     }
 
     public String getLastMessage() {
-      return lastMessage;
+      String message;
+      synchronized (lastMessage){
+        message = lastMessage;
+      }
+      return message;
     }
 
     public void stop() {
@@ -84,25 +89,30 @@ class QueryDispatcherTest {
   void tearDown() {
     this.socketListener.stop();
     try {
-      socketThread.join();
+      socketThread.join(10);
     } catch (InterruptedException e) {
       throw new RuntimeException("Interrupt exception");
     }
   }
 
   @Test
-  @Order(1)
   void dispatchOne() {
-    String message = "0047 SER 129.82.62.142 5070 \"Lord of the rings\"";
-    Query query = Query.createQuery(message, socketListener.toNode());
-    this.queryDispatcher.dispatchOne(query);
-    try {
-      TimeUnit.SECONDS.sleep(5);
-      String last = socketListener.getLastMessage();
-      assertNotNull(last);
-      assertEquals(last, message);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
+    String[] messages = {
+            "0047 SER 129.82.62.142 5070 \"Lord of the rings\"",
+            "0027 JOIN 64.12.123.190 432",
+            "0028 LEAVE 64.12.123.190 432",
+    };
+    for(String message: messages){
+      Query query = Query.createQuery(message, socketListener.toNode());
+      this.queryDispatcher.dispatchOne(query);
+      try {
+        TimeUnit.SECONDS.sleep(1);
+        String last = socketListener.getLastMessage();
+        assertNotNull(last);
+        assertEquals(message, last);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
     }
   }
 
