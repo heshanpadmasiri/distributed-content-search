@@ -60,7 +60,6 @@ class SearchQueryExecutorTest {
     assertEquals(result.state, 0);
     assertEquals(expectedResponse, result.body);
     assertEquals(result.query, query);
-
     listenerThread.join();
   }
 

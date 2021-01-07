@@ -41,6 +41,7 @@ class SearchQueryExecutor extends Executor {
     synchronized (monitor){
       monitor.notifyAll();
     }
+    queryListener.unRegisterForResponse(destination, this);
   }
 
   @Override
