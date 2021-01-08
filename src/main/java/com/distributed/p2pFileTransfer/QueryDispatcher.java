@@ -29,20 +29,30 @@ class QueryDispatcher {
   Future<QueryResult> dispatchOne(Query query) {
     Executor executor;
     String queryType = query.body.split(" ")[1];
-    switch (queryType){
+    switch (queryType) {
       case "SER":
+        executor =
+            new FileSearchQueryExecutor(
+                query,
+                socket,
+                fileTransferService.getQueryListener(),
+                fileTransferService.getFileHandler(),
+                false);
+        break;
       case "UNREG":
       case "JOIN":
       case "LEAVE":
       case "REG":
-        executor = new AcknowledgedQueryExecutor(query,socket, fileTransferService.getQueryListener());
+        executor =
+            new AcknowledgedQueryExecutor(query, socket, fileTransferService.getQueryListener());
         break;
       case "SEROK":
       case "UNREGOK":
       case "JOINOK":
       case "LEAVEOK":
       case "REGOK":
-        executor = new UnAcknowledgedQueryExecutor(query,socket, fileTransferService.getQueryListener());
+        executor =
+            new UnAcknowledgedQueryExecutor(query, socket, fileTransferService.getQueryListener());
         break;
       default:
         throw new IllegalStateException("Unexpected value: " + queryType);
@@ -71,4 +81,3 @@ class QueryDispatcher {
     return null;
   }
 }
-

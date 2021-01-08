@@ -41,7 +41,7 @@ class AcknowledgedQueryExecutor extends Executor {
 
   @Override
   public void notify(String message) {
-    //todo : check if the message is a response for the message we send
+    // todo : check if the message is a response for the message we send
     response = message;
     responseReceived = true;
     logger.log(Level.INFO, String.format("Message received %s", message));
@@ -75,6 +75,31 @@ class AcknowledgedQueryExecutor extends Executor {
   }
 }
 
+class FileSearchQueryExecutor extends AcknowledgedQueryExecutor {
+  FileHandler fileHandler;
+  boolean cacheToLocal;
+
+  public FileSearchQueryExecutor(
+      Query query,
+      DatagramSocket socket,
+      QueryListener queryListener,
+      FileHandler fileHandler,
+      boolean cacheToLocal) {
+    super(query, socket, queryListener);
+    this.fileHandler = fileHandler;
+    this.cacheToLocal = cacheToLocal;
+  }
+
+  @Override
+  public QueryResult call() {
+    QueryResult result = super.call();
+    if (cacheToLocal){
+      // todo : implement then download call
+    }
+    return result;
+  }
+}
+
 class UnAcknowledgedQueryExecutor extends Executor {
   Logger logger;
 
@@ -95,7 +120,7 @@ class UnAcknowledgedQueryExecutor extends Executor {
   public QueryResult call() throws Exception {
     byte[] data = query.body.getBytes(StandardCharsets.UTF_8);
     DatagramPacket sendDatagram =
-            new DatagramPacket(data, data.length, query.destination.getSocketAddress());
+        new DatagramPacket(data, data.length, query.destination.getSocketAddress());
     try {
       socket.send(sendDatagram);
     } catch (IOException e) {
