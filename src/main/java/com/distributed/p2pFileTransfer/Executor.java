@@ -117,7 +117,7 @@ class UnAcknowledgedQueryExecutor extends Executor {
   }
 
   @Override
-  public QueryResult call() throws Exception {
+  public QueryResult call() {
     byte[] data = query.body.getBytes(StandardCharsets.UTF_8);
     DatagramPacket sendDatagram =
         new DatagramPacket(data, data.length, query.destination.getSocketAddress());

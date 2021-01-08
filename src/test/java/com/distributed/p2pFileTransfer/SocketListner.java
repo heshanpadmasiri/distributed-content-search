@@ -42,8 +42,8 @@ class SocketListener implements Runnable {
                                 new DatagramPacket(
                                         responseData, responseData.length, incoming.getAddress(), incoming.getPort());
                         socket.send(responseDatagram);
-                        this.stop();
                     }
+                    this.stop();
                 } else {
                     throw new RuntimeException(String.format("Invalid message received : %s", message));
                 }
