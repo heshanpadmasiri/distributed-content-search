@@ -4,9 +4,10 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 
-class SocketListener implements Runnable {
+public class SocketListener implements Runnable {
     private String expectedMessage;
     private String response;
     private DatagramSocket socket;
@@ -23,6 +24,7 @@ class SocketListener implements Runnable {
     public SocketListener(int port, String expectedMessage)
             throws SocketException {
         socket = new DatagramSocket(port);
+        socket.setSoTimeout(1000);
         node = new Node(socket.getInetAddress(), port);
         this.expectedMessage = expectedMessage;
     }
@@ -48,6 +50,8 @@ class SocketListener implements Runnable {
                     throw new RuntimeException(String.format("Invalid message received : %s", message));
                 }
                 this.terminate = true;
+            } catch (SocketTimeoutException e) {
+                System.out.println("Listener timeout");
             } catch (IOException e) {
                 throw new RuntimeException("IO exception in socket listener");
             }

@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -34,6 +36,8 @@ class QueryDispatcherTest {
 
     public SocketListener(int port) throws SocketException {
       socket = new DatagramSocket(port);
+      socket.setSoTimeout(1000);
+
       node = new Node(socket.getInetAddress(), port);
     }
 
@@ -48,6 +52,8 @@ class QueryDispatcherTest {
             lastMessage = new String(buffer).split("\0")[0];
             messageCount++;
           }
+        } catch (SocketTimeoutException e) {
+            System.out.println("Listener timeout");
         } catch (IOException e) {
           throw new RuntimeException("IO exception in socket listener");
         }
