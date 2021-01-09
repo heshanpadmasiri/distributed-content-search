@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,6 +21,7 @@ class QueryListener implements Runnable {
     executorService = Executors.newCachedThreadPool();
     pendingExecutors = new HashMap<>();
     socket = new DatagramSocket(port);
+    socket.setSoTimeout(60000);
   }
 
   public DatagramSocket getSocket() {
@@ -37,6 +39,8 @@ class QueryListener implements Runnable {
         Node origin = new Node(incoming.getAddress(), incoming.getPort());
         executorService.submit(new ListenerThread(message, origin));
         this.terminate = true;
+      } catch (SocketTimeoutException e) {
+        System.out.println("Listener timeout");
       } catch (IOException e) {
         throw new RuntimeException("IO exception in socket listener");
       }
