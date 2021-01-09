@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
@@ -29,6 +30,8 @@ class QueryDispatcherTest {
 
     public SocketListener(int port) throws SocketException {
       socket = new DatagramSocket(port);
+      socket.setSoTimeout(1000);
+
       node = new Node(socket.getInetAddress(), port);
     }
 
@@ -39,9 +42,11 @@ class QueryDispatcherTest {
         DatagramPacket incoming = new DatagramPacket(buffer, buffer.length);
         try {
           socket.receive(incoming);
-          synchronized (lastMessage){
+          synchronized (lastMessage) {
             lastMessage = new String(buffer).split("\0")[0];
           }
+        } catch (SocketTimeoutException e) {
+            System.out.println("Listener timeout");
         } catch (IOException e) {
           throw new RuntimeException("IO exception in socket listener");
         }
@@ -51,7 +56,7 @@ class QueryDispatcherTest {
 
     public String getLastMessage() {
       String message;
-      synchronized (lastMessage){
+      synchronized (lastMessage) {
         message = lastMessage;
       }
       return message;
@@ -98,11 +103,11 @@ class QueryDispatcherTest {
   @Test
   void dispatchOne() {
     String[] messages = {
-            "0047 SER 129.82.62.142 5070 \"Lord of the rings\"",
-            "0027 JOIN 64.12.123.190 432",
-            "0028 LEAVE 64.12.123.190 432",
+      "0047 SER 129.82.62.142 5070 \"Lord of the rings\"",
+      "0027 JOIN 64.12.123.190 432",
+      "0028 LEAVE 64.12.123.190 432",
     };
-    for(String message: messages){
+    for (String message : messages) {
       Query query = Query.createQuery(message, socketListener.toNode());
       this.queryDispatcher.dispatchOne(query);
       try {
@@ -115,5 +120,4 @@ class QueryDispatcherTest {
       }
     }
   }
-
 }
