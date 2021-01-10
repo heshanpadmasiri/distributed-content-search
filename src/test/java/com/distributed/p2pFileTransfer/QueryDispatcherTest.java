@@ -5,10 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
+import java.net.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +32,13 @@ class QueryDispatcherTest {
     private int messageCount = 0;
 
     public SocketListener(int port) throws SocketException {
-      socket = new DatagramSocket(port);
+      try {
+        socket = new DatagramSocket(port);
+      } catch (BindException ex) {
+        socket = new DatagramSocket();
+        socket.setReuseAddress(true);
+        socket.bind(new InetSocketAddress(port));
+      }
       socket.setSoTimeout(1000);
 
       node = new Node(socket.getInetAddress(), port);
@@ -53,12 +56,15 @@ class QueryDispatcherTest {
             messageCount++;
           }
         } catch (SocketTimeoutException e) {
-            System.out.println("Listener timeout");
+          System.out.println("Listener timeout");
         } catch (IOException e) {
           throw new RuntimeException("IO exception in socket listener");
         }
       }
-      socket.close();
+      while (socket.isBound()) {
+        socket.disconnect();
+        socket.close();
+      }
     }
 
     public String getLastMessage() {
@@ -113,6 +119,7 @@ class QueryDispatcherTest {
     } catch (InterruptedException e) {
       throw new RuntimeException("Interrupt exception");
     }
+    queryListener.stop();
   }
 
   @Test
@@ -152,7 +159,7 @@ class QueryDispatcherTest {
       int count = socketListener.getMessageCount();
       assertNotNull(last);
       assertTrue(messages.contains(last));
-      assertEquals(queries.size(),count);
+      assertEquals(queries.size(), count);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }

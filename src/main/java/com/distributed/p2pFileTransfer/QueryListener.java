@@ -1,10 +1,7 @@
 package com.distributed.p2pFileTransfer;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,8 +17,10 @@ class QueryListener implements Runnable {
     this.fileTransferService = fileTransferService;
     executorService = Executors.newCachedThreadPool();
     pendingExecutors = new HashMap<>();
-    socket = new DatagramSocket(port);
-    socket.setSoTimeout(60000);
+    socket = new DatagramSocket(null);
+    socket.setReuseAddress(true);
+    socket.bind(new InetSocketAddress(port));
+    socket.setSoTimeout(1000);
   }
 
   public DatagramSocket getSocket() {
@@ -45,7 +44,10 @@ class QueryListener implements Runnable {
         throw new RuntimeException("IO exception in socket listener");
       }
     }
-    socket.close();
+    while (socket.isBound()){
+      socket.disconnect();
+      socket.close();
+    }
   }
 
   /**
