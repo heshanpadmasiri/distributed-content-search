@@ -17,6 +17,7 @@ public class SocketListener implements Runnable {
     public SocketListener(int port, String expectedMessage, String response)
             throws SocketException {
         socket = new DatagramSocket(port);
+        socket.setSoTimeout(1000);
         node = new Node(socket.getInetAddress(), port);
         this.expectedMessage = expectedMessage;
         this.response = response;
