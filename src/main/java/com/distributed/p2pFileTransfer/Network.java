@@ -5,7 +5,7 @@ import java.util.Iterator;
 abstract class Network {
 
     private final AbstractFileTransferService fileTransferService;
-    private Node boostrapServer;
+    private final Node boostrapServer;
 
     /**
      * Representation of nodes view of the network. Concrete implementations must connect with the bootstrap server and

@@ -1,5 +1,6 @@
 package com.distributed.p2pFileTransfer;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.tomcat.util.buf.HexUtils;
 
 import java.io.File;
@@ -12,19 +13,17 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.io.FileUtils;
-
 public class Storage {
     // TODO: Get file directory from config
 //    private static final String dir = "/home/kalana/distributed/content/";
 //    private static final String cacheDir = dir + "cache_storage/";
 //    private static final String localDir = dir + "local_storage/";
 //    private static final long fullCacheSize = 10000000; // 10MB
-    private String cacheDir;
-    private String localDir;
-    private long fullCacheSize;
+    private final String cacheDir;
+    private final String localDir;
+    private final long fullCacheSize;
 
-    Storage(String cacheDir,String localDir, long fullCacheSize){
+    Storage(String cacheDir, String localDir, long fullCacheSize) {
         this.cacheDir = cacheDir;
         this.localDir = localDir;
         this.fullCacheSize = fullCacheSize;
@@ -174,5 +173,4 @@ public class Storage {
 
     }
 
-    ;
 }

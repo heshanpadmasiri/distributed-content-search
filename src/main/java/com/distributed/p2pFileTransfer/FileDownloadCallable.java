@@ -1,15 +1,17 @@
 package com.distributed.p2pFileTransfer;
 
-import java.io.*;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.Callable;
 
 public class FileDownloadCallable implements Callable<FileDownloadResult> {
-    private Node source;
-    private String fileName;
-    private String destination;
-    private Storage fileStorage;
+    private final Node source;
+    private final String fileName;
+    private final String destination;
+    private final Storage fileStorage;
 
     FileDownloadCallable(Node source, String filename, String destination, Storage fileStorage) {
         this.source = source;

@@ -31,7 +31,7 @@ public class EndPointController {
     public ResponseEntity<Resource> downloadFile(HttpServletResponse res, @PathVariable("name") String fileName) throws IOException {
 
         //TODO: Get these values from properties file
-        Storage fileStorage = new Storage("/home/kalana/distributed/content/cache_storage","/home/kalana/distributed/content/local_storage", 10000000);
+        Storage fileStorage = new Storage("/home/kalana/distributed/content/cache_storage", "/home/kalana/distributed/content/local_storage", 10000000);
 
         System.out.println("Attempting to download " + fileName);
         File file = fileStorage.getFile(fileName);
@@ -65,7 +65,7 @@ public class EndPointController {
      */
     @RequestMapping("/search/{name:.+}")
     public ResponseEntity<String> searchFile(HttpServletResponse res, @PathVariable("name") String fileName) {
-        Storage fileStorage = new Storage("/home/kalana/distributed/content/cache_storage","/home/kalana/distributed/content/local_storage", 10000000);
+        Storage fileStorage = new Storage("/home/kalana/distributed/content/cache_storage", "/home/kalana/distributed/content/local_storage", 10000000);
         List<String> matchingNames = fileStorage.searchForFile(fileName);
         String json = new Gson().toJson(matchingNames);
         return ResponseEntity.ok()

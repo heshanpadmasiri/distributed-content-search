@@ -8,16 +8,16 @@ import java.util.concurrent.Future;
 
 public class FileHandler {
     //private AbstractFileTransferService fileTransferService;
-    private String cacheDir;
-    private String localDir;
-    private long cacheSize;
-    private Storage fileStorage;
+    private final String cacheDir;
+    private final String localDir;
+    private final long cacheSize;
+    private final Storage fileStorage;
 
-    FileHandler(String cacheDir, String localDir, long cacheSize){
+    FileHandler(String cacheDir, String localDir, long cacheSize) {
         this.cacheDir = cacheDir;
         this.localDir = localDir;
         this.cacheSize = cacheSize;
-        this.fileStorage = new Storage(cacheDir,localDir,cacheSize);
+        this.fileStorage = new Storage(cacheDir, localDir, cacheSize);
     }
 
     /**
