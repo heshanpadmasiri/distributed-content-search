@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.distributed</groupId>
-	<artifactId>p2psearch</artifactId>
+	<artifactId>p2pFileTransfer</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>distributed-content-searching</name>
 	<description>P2P Content Searching System</description>

@@ -8,10 +8,14 @@ import java.util.concurrent.Callable;
 public class FileDownloadCallable implements Callable<FileDownloadResult> {
     private Node source;
     private String fileName;
+    private String destination;
+    private Storage fileStorage;
 
-    FileDownloadCallable(Node source, String filename) {
+    FileDownloadCallable(Node source, String filename, String destination, Storage fileStorage) {
         this.source = source;
         this.fileName = filename;
+        this.destination = destination;
+        this.fileStorage = fileStorage;
     }
 
     /**
@@ -32,7 +36,7 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
         String fileHash = httpURLConnection.getHeaderField("Hash");
         int fileSize = httpURLConnection.getContentLength();
         if (fileHash != null) {
-            result = downloadFile(httpURLConnection, fileHash, fileSize);
+            result = downloadFile(httpURLConnection, fileHash, fileSize, destination);
         } else {
             result = new FileDownloadResult("Hash not avaialable", 1);
         }
@@ -48,24 +52,22 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
      * @return FileDownloadResult Download status
      * @throws IOException
      */
-    public FileDownloadResult downloadFile(HttpURLConnection httpURLConnection, String fileHash, int fileSize) throws IOException {
+    public FileDownloadResult downloadFile(HttpURLConnection httpURLConnection, String fileHash, int fileSize, String destination) throws IOException {
         InputStream inputStream = httpURLConnection.getInputStream();
         // Byte reader
-        // TODO: Get download directory from config
-        String saveFilePath = "/home/kalana/distributed/content/local_storage/" + fileName;
+        // Get download destination path
+        String saveFilePath = destination + "/" + fileName;
 
         FileOutputStream outputStream = new FileOutputStream(saveFilePath);
-        int bytesRead = -1;
+        int bytesRead;
         byte[] buffer = new byte[fileSize];
         if (httpURLConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-            //TODO: Fix this to work wth empty files
-            //int bytestRead = inputStream.read(buffer);
             if (inputStream.available() != 0) {
                 while ((bytesRead = inputStream.read(buffer)) != -1) {
                     outputStream.write(buffer, 0, bytesRead);
                 }
                 System.out.println("Downloaded " + saveFilePath);
-                String hexHash = Storage.getFileHash(saveFilePath);
+                String hexHash = this.fileStorage.getFileHash(saveFilePath);
                 if (hexHash.equals(fileHash)) {
                     System.out.println("File hashes match");
                     return new FileDownloadResult("success", 0);

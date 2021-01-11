@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.file.Paths;
 import java.util.List;
 
 
@@ -16,10 +15,10 @@ class MainTests {
      */
     @Test
     void testFileDownload() throws UnknownHostException {
-        FileHandler fHandler = new FileHandler();
+        FileHandler fHandler = new FileHandler("/home/kalana/distributed/content/cache_storage", "/home/kalana/distributed/content/local_storage", 10000000);
         InetAddress add = InetAddress.getByName("127.0.0.1");
         Node myNode = new Node(add, 8080);
-        fHandler.downloadFile(myNode, "s", Paths.get(""));
+        fHandler.downloadFile(myNode, "sites.csv", "/home/kalana/distributed/content/cache_storage");
     }
 
     /**
@@ -27,7 +26,7 @@ class MainTests {
      */
     @Test
     void testFileSearch() {
-        FileHandler fHandler = new FileHandler();
+        FileHandler fHandler = new FileHandler("/home/kalana/distributed/content/cache_storage", "/home/kalana/distributed/content/local_storage", 10000000);
         List<String> matchingFiles = fHandler.searchForFile("s");
         matchingFiles.forEach(System.out::println);
     }
@@ -37,7 +36,7 @@ class MainTests {
      */
     @Test
     void testCacheSpace() {
-        FileHandler fileHandler = new FileHandler();
+        FileHandler fileHandler = new FileHandler("/home/kalana/distributed/content/cache_storage", "/home/kalana/distributed/content/local_storage", 10000000);
         fileHandler.makeCacheSpace(3000000);
     }
 
