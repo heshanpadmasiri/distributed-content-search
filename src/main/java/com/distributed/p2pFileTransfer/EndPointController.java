@@ -15,6 +15,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URLConnection;
 import java.util.List;
+import java.util.logging.Logger;
 
 @RestController
 public class EndPointController {
@@ -31,7 +32,7 @@ public class EndPointController {
     public ResponseEntity<Resource> downloadFile(HttpServletResponse res, @PathVariable("name") String fileName) throws IOException {
 
         //TODO: Get these values from properties file
-        Storage fileStorage = new Storage("/home/kalana/distributed/content/cache_storage", "/home/kalana/distributed/content/local_storage", 10000000);
+        Storage fileStorage = new Storage("/home/kalana/distributed/content/cache_storage", "/home/kalana/distributed/content/local_storage", 10000000, this.getClass().getName());
 
         System.out.println("Attempting to download " + fileName);
         File file = fileStorage.getFile(fileName);
@@ -50,6 +51,7 @@ public class EndPointController {
         String hexHash = fileStorage.getFileHash(fileName);
         res.setHeader("Hash", hexHash);
 
+        System.out.println("Serving file from the server");
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(resource);
@@ -65,7 +67,7 @@ public class EndPointController {
      */
     @RequestMapping("/search/{name:.+}")
     public ResponseEntity<String> searchFile(HttpServletResponse res, @PathVariable("name") String fileName) {
-        Storage fileStorage = new Storage("/home/kalana/distributed/content/cache_storage", "/home/kalana/distributed/content/local_storage", 10000000);
+        Storage fileStorage = new Storage("/home/kalana/distributed/content/cache_storage", "/home/kalana/distributed/content/local_storage", 10000000, this.getClass().getName());
         List<String> matchingNames = fileStorage.searchForFile(fileName);
         String json = new Gson().toJson(matchingNames);
         return ResponseEntity.ok()

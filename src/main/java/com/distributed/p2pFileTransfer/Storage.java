@@ -12,21 +12,21 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Storage {
-    // TODO: Get file directory from config
-//    private static final String dir = "/home/kalana/distributed/content/";
-//    private static final String cacheDir = dir + "cache_storage/";
-//    private static final String localDir = dir + "local_storage/";
-//    private static final long fullCacheSize = 10000000; // 10MB
-    private final String cacheDir;
-    private final String localDir;
-    private final long fullCacheSize;
 
-    Storage(String cacheDir, String localDir, long fullCacheSize) {
+    private String cacheDir;
+    private String localDir;
+    private long fullCacheSize;
+    private final Logger logger;
+
+    Storage(String cacheDir, String localDir, long fullCacheSize, String loggerName) {
         this.cacheDir = cacheDir;
         this.localDir = localDir;
         this.fullCacheSize = fullCacheSize;
+        this.logger = Logger.getLogger(loggerName);
     }
 
     /**
@@ -60,7 +60,7 @@ public class Storage {
                 }
             }
             if (oldestFile != null) {
-                System.out.println("Deleted file " + oldestFile.getName());
+                this.logger.log(Level.INFO,String.format("Deleted file %s",oldestFile.getName()));
                 oldestFile.delete();
             }
         }
@@ -131,7 +131,7 @@ public class Storage {
     }
 
     /**
-     * Used to get a file from storage
+     * Used to get a file from storage if it exists in local storage or cache storage
      *
      * @param fileName name of the file
      * @return file

@@ -18,7 +18,8 @@ class MainTests {
         FileHandler fHandler = new FileHandler("/home/kalana/distributed/content/cache_storage", "/home/kalana/distributed/content/local_storage", 10000000);
         InetAddress add = InetAddress.getByName("127.0.0.1");
         Node myNode = new Node(add, 8080);
-        fHandler.downloadFile(myNode, "sites.csv", "/home/kalana/distributed/content/cache_storage");
+        fHandler.downloadFileToLocal(myNode, "sites.csv");
+        //fHandler.downloadFileToCache(myNode, "sites.csv");
     }
 
     /**

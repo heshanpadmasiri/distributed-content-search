@@ -6,18 +6,22 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.Callable;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class FileDownloadCallable implements Callable<FileDownloadResult> {
-    private final Node source;
-    private final String fileName;
-    private final String destination;
+    private Node source;
+    private String fileName;
+    private String destination;
     private final Storage fileStorage;
+    private final Logger logger;
 
-    FileDownloadCallable(Node source, String filename, String destination, Storage fileStorage) {
+    FileDownloadCallable(Node source, String filename, String destination, Storage fileStorage, String loggerName) {
         this.source = source;
         this.fileName = filename;
         this.destination = destination;
         this.fileStorage = fileStorage;
+        this.logger = Logger.getLogger(loggerName);
     }
 
     /**
@@ -68,13 +72,13 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
                 while ((bytesRead = inputStream.read(buffer)) != -1) {
                     outputStream.write(buffer, 0, bytesRead);
                 }
-                System.out.println("Downloaded " + saveFilePath);
+                this.logger.log(Level.INFO,String.format("Downloaded %s",saveFilePath));
                 String hexHash = this.fileStorage.getFileHash(saveFilePath);
                 if (hexHash.equals(fileHash)) {
-                    System.out.println("File hashes match");
+                    this.logger.log(Level.INFO,"File hashes match");
                     return new FileDownloadResult("success", 0);
                 } else {
-                    System.out.println("File hashes do not match");
+                    this.logger.log(Level.INFO,"File hashes do not match");
                     return new FileDownloadResult("Hash do not match", 1);
                 }
             } else {
