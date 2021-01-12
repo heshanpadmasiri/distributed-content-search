@@ -1,14 +1,16 @@
 package com.distributed.p2pFileTransfer;
 
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
+import java.net.*;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -27,9 +29,16 @@ class QueryDispatcherTest {
     private DatagramSocket socket;
     private boolean terminate = false;
     private Node node;
+    private int messageCount = 0;
 
     public SocketListener(int port) throws SocketException {
-      socket = new DatagramSocket(port);
+      try {
+        socket = new DatagramSocket(port);
+      } catch (BindException ex) {
+        socket = new DatagramSocket();
+        socket.setReuseAddress(true);
+        socket.bind(new InetSocketAddress(port));
+      }
       socket.setSoTimeout(1000);
 
       node = new Node(socket.getInetAddress(), port);
@@ -44,14 +53,18 @@ class QueryDispatcherTest {
           socket.receive(incoming);
           synchronized (lastMessage) {
             lastMessage = new String(buffer).split("\0")[0];
+            messageCount++;
           }
         } catch (SocketTimeoutException e) {
-            System.out.println("Listener timeout");
+          System.out.println("Listener timeout");
         } catch (IOException e) {
           throw new RuntimeException("IO exception in socket listener");
         }
       }
-      socket.close();
+      while (socket.isBound()) {
+        socket.disconnect();
+        socket.close();
+      }
     }
 
     public String getLastMessage() {
@@ -60,6 +73,14 @@ class QueryDispatcherTest {
         message = lastMessage;
       }
       return message;
+    }
+
+    public int getMessageCount() {
+      int count;
+      synchronized (lastMessage) {
+        count = messageCount;
+      }
+      return count;
     }
 
     public void stop() {
@@ -98,6 +119,7 @@ class QueryDispatcherTest {
     } catch (InterruptedException e) {
       throw new RuntimeException("Interrupt exception");
     }
+    queryListener.stop();
   }
 
   @Test
@@ -118,6 +140,28 @@ class QueryDispatcherTest {
       } catch (InterruptedException e) {
         e.printStackTrace();
       }
+    }
+  }
+
+  @Test
+  void dispatchAllSearch() {
+    List<String> messages =
+        Stream.of(
+                "0047 SER 129.82.62.142 5070 \"Lord of the rings1\"",
+                "0047 SER 129.82.62.142 5070 \"Lord of the rings2\"",
+                "0047 SER 129.82.62.142 5070 \"Lord of the rings3\"")
+            .collect(Collectors.toList());
+    List<Query> queries = Query.createQuery(messages, socketListener.toNode());
+    queryDispatcher.dispatchAll(queries);
+    try {
+      TimeUnit.SECONDS.sleep(1);
+      String last = socketListener.getLastMessage();
+      int count = socketListener.getMessageCount();
+      assertNotNull(last);
+      assertTrue(messages.contains(last));
+      assertEquals(queries.size(), count);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
     }
   }
 }

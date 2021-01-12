@@ -38,7 +38,7 @@ class AcknowledgedQueryExecutorTest {
   @AfterEach
   void tearDown() throws InterruptedException {
     this.queryListener.stop();
-    queryListenerThread.join();
+    queryListenerThread.join(10);
   }
 
   @Test
@@ -61,7 +61,7 @@ class AcknowledgedQueryExecutorTest {
     assertEquals(result.state, 0);
     assertEquals(expectedResponse, result.body);
     assertEquals(result.query, query);
-    listenerThread.join();
+    listenerThread.join(10);
   }
 
 }

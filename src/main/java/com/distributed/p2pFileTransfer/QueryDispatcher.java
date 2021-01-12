@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 class QueryDispatcher {
   private final AbstractFileTransferService fileTransferService;
@@ -67,7 +68,7 @@ class QueryDispatcher {
    * @return results of all the queries
    */
   List<Future<QueryResult>> dispatchAll(List<Query> queries) {
-    return null;
+    return queries.stream().map(this::dispatchOne).collect(Collectors.toList());
   }
 
   /**
