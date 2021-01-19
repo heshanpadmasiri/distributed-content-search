@@ -1,5 +1,6 @@
 package com.distributed.p2pFileTransfer;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.tomcat.util.buf.HexUtils;
 
 import java.io.File;
@@ -11,25 +12,32 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.commons.io.FileUtils;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Storage {
-    // TODO: Get file directory from config
-    private static final String dir = "/home/kalana/distributed/content/";
-    private static final String cacheDir = dir + "cache_storage/";
-    private static final String localDir = dir + "local_storage/";
-    private static final long fullCacheSize = 10000000; // 10MB
+
+    private String cacheDir;
+    private String localDir;
+    private long fullCacheSize;
+    private final Logger logger;
+
+    Storage(String cacheDir, String localDir, long fullCacheSize, String loggerName) {
+        this.cacheDir = cacheDir;
+        this.localDir = localDir;
+        this.fullCacheSize = fullCacheSize;
+        this.logger = Logger.getLogger(loggerName);
+    }
 
     /**
      * Make enough space in the cache directory to download the new file
      *
      * @param reqSpace Size of the new file in bytes
      */
-    public static void makeCacheSpace(long reqSpace) {
-        File cacheDirFile = new File(cacheDir);
+    public void makeCacheSpace(long reqSpace) {
+        File cacheDirFile = new File(this.cacheDir);
         long cacheSize = FileUtils.sizeOfDirectory(cacheDirFile);
-        while ((fullCacheSize - cacheSize) < reqSpace) {
+        while ((this.fullCacheSize - cacheSize) < reqSpace) {
             deleteOldestFile(cacheDirFile);
             cacheSize = FileUtils.sizeOfDirectory(cacheDirFile);
         }
@@ -40,7 +48,7 @@ public class Storage {
      *
      * @param directory Directory
      */
-    public static void deleteOldestFile(File directory) {
+    public void deleteOldestFile(File directory) {
         File[] dirFiles = directory.listFiles();
         long oldestDate = Long.MAX_VALUE;
         File oldestFile = null;
@@ -52,7 +60,7 @@ public class Storage {
                 }
             }
             if (oldestFile != null) {
-                System.out.println("Deleted file " + oldestFile.getName());
+                this.logger.log(Level.INFO,String.format("Deleted file %s",oldestFile.getName()));
                 oldestFile.delete();
             }
         }
@@ -65,12 +73,12 @@ public class Storage {
      * @param fileName  File to search
      * @return String file path if exists else null
      */
-    public static String searchDirectory(String searchDir, String fileName) {
+    public String searchDirectory(String searchDir, String fileName) {
         String[] searchDirListing = new File(searchDir).list();
         if (searchDirListing != null) {
             for (String filename : searchDirListing) {
                 if (filename.matches(fileName)) {
-                    return searchDir + fileName;
+                    return searchDir + "/" + fileName;
                 }
             }
         }
@@ -83,7 +91,7 @@ public class Storage {
      * @param fileName Name of the file
      * @return String File Path
      */
-    public static String getFilePath(String fileName) {
+    public String getFilePath(String fileName) {
         String filepath = searchDirectory(localDir, fileName);
         if (filepath == null) {
             filepath = searchDirectory(cacheDir, fileName);
@@ -98,7 +106,7 @@ public class Storage {
      * @param query search query
      * @return List of file names matching the query
      */
-    public static List<String> searchForFile(String query) {
+    public List<String> searchForFile(String query) {
 
         String[] cacheFileDir = new File(cacheDir).list();
         String[] localFileDir = new File(localDir).list();
@@ -123,14 +131,14 @@ public class Storage {
     }
 
     /**
-     * Used to get a file from storage
+     * Used to get a file from storage if it exists in local storage or cache storage
      *
      * @param fileName name of the file
      * @return file
      * @throws FileNotFoundException if no file matches the file name exactly
      */
-    public static File getFile(String fileName) throws FileNotFoundException {
-        String filePath = Storage.getFilePath(fileName);
+    public File getFile(String fileName) throws FileNotFoundException {
+        String filePath = this.getFilePath(fileName);
         File file = new File(filePath);
         if (file.exists()) {
             return file;
@@ -146,8 +154,8 @@ public class Storage {
      * @return SHA-1 hash of the file
      * @throws FileNotFoundException if no file matches the file name exactly
      */
-    public static String getFileHash(String fileName) throws FileNotFoundException {
-        String filePath = Storage.getFilePath(fileName);
+    public String getFileHash(String fileName) throws FileNotFoundException {
+        String filePath = this.getFilePath(fileName);
         File file = new File(filePath);
         if (file.exists()) {
             try {
@@ -165,5 +173,4 @@ public class Storage {
 
     }
 
-    ;
 }

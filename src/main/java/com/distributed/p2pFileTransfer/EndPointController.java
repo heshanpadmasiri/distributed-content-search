@@ -15,6 +15,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URLConnection;
 import java.util.List;
+import java.util.logging.Logger;
 
 @RestController
 public class EndPointController {
@@ -29,11 +30,12 @@ public class EndPointController {
      */
     @RequestMapping("/file/{name:.+}")
     public ResponseEntity<Resource> downloadFile(HttpServletResponse res, @PathVariable("name") String fileName) throws IOException {
-        // TODO: Get upload directory from config
-        //String filepath = "/home/kalana/distributed/content/uploads/"+ fileName;
+
+        //TODO: Get these values from properties file
+        Storage fileStorage = new Storage("/home/kalana/distributed/content/cache_storage", "/home/kalana/distributed/content/local_storage", 10000000, this.getClass().getName());
 
         System.out.println("Attempting to download " + fileName);
-        File file = Storage.getFile(fileName);
+        File file = fileStorage.getFile(fileName);
 
         String mimeType = URLConnection.guessContentTypeFromName(file.getName());
         if (mimeType == null) {
@@ -46,9 +48,10 @@ public class EndPointController {
 
         InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
 
-        String hexHash = Storage.getFileHash(fileName);
+        String hexHash = fileStorage.getFileHash(fileName);
         res.setHeader("Hash", hexHash);
 
+        System.out.println("Serving file from the server");
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(resource);
@@ -64,7 +67,8 @@ public class EndPointController {
      */
     @RequestMapping("/search/{name:.+}")
     public ResponseEntity<String> searchFile(HttpServletResponse res, @PathVariable("name") String fileName) {
-        List<String> matchingNames = Storage.searchForFile(fileName);
+        Storage fileStorage = new Storage("/home/kalana/distributed/content/cache_storage", "/home/kalana/distributed/content/local_storage", 10000000, this.getClass().getName());
+        List<String> matchingNames = fileStorage.searchForFile(fileName);
         String json = new Gson().toJson(matchingNames);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_JSON)

@@ -6,6 +6,7 @@ class QueryQueue<T> {
 
     /**
      * Used to check if a query already pending in the queue
+     *
      * @param query
      * @return
      */

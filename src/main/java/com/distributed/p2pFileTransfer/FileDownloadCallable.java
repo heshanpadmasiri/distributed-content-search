@@ -1,17 +1,27 @@
 package com.distributed.p2pFileTransfer;
 
-import java.io.*;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.Callable;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class FileDownloadCallable implements Callable<FileDownloadResult> {
     private Node source;
     private String fileName;
+    private String destination;
+    private final Storage fileStorage;
+    private final Logger logger;
 
-    FileDownloadCallable(Node source, String filename) {
+    FileDownloadCallable(Node source, String filename, String destination, Storage fileStorage, String loggerName) {
         this.source = source;
         this.fileName = filename;
+        this.destination = destination;
+        this.fileStorage = fileStorage;
+        this.logger = Logger.getLogger(loggerName);
     }
 
     /**
@@ -32,7 +42,7 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
         String fileHash = httpURLConnection.getHeaderField("Hash");
         int fileSize = httpURLConnection.getContentLength();
         if (fileHash != null) {
-            result = downloadFile(httpURLConnection, fileHash, fileSize);
+            result = downloadFile(httpURLConnection, fileHash, fileSize, destination);
         } else {
             result = new FileDownloadResult("Hash not avaialable", 1);
         }
@@ -48,29 +58,27 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
      * @return FileDownloadResult Download status
      * @throws IOException
      */
-    public FileDownloadResult downloadFile(HttpURLConnection httpURLConnection, String fileHash, int fileSize) throws IOException {
+    public FileDownloadResult downloadFile(HttpURLConnection httpURLConnection, String fileHash, int fileSize, String destination) throws IOException {
         InputStream inputStream = httpURLConnection.getInputStream();
         // Byte reader
-        // TODO: Get download directory from config
-        String saveFilePath = "/home/kalana/distributed/content/local_storage/" + fileName;
+        // Get download destination path
+        String saveFilePath = destination + "/" + fileName;
 
         FileOutputStream outputStream = new FileOutputStream(saveFilePath);
-        int bytesRead = -1;
+        int bytesRead;
         byte[] buffer = new byte[fileSize];
         if (httpURLConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-            //TODO: Fix this to work wth empty files
-            //int bytestRead = inputStream.read(buffer);
             if (inputStream.available() != 0) {
                 while ((bytesRead = inputStream.read(buffer)) != -1) {
                     outputStream.write(buffer, 0, bytesRead);
                 }
-                System.out.println("Downloaded " + saveFilePath);
-                String hexHash = Storage.getFileHash(saveFilePath);
+                this.logger.log(Level.INFO,String.format("Downloaded %s",saveFilePath));
+                String hexHash = this.fileStorage.getFileHash(saveFilePath);
                 if (hexHash.equals(fileHash)) {
-                    System.out.println("File hashes match");
+                    this.logger.log(Level.INFO,"File hashes match");
                     return new FileDownloadResult("success", 0);
                 } else {
-                    System.out.println("File hashes do not match");
+                    this.logger.log(Level.INFO,"File hashes do not match");
                     return new FileDownloadResult("Hash do not match", 1);
                 }
             } else {

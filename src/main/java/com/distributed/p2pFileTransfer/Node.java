@@ -13,8 +13,9 @@ public class Node {
 
     /**
      * Represent a node in the distributed system
+     *
      * @param ipAddress IP address of the node
-     * @param port port of the node
+     * @param port      port of the node
      */
     public Node(InetAddress ipAddress, int port) {
         this.ipAddress = ipAddress;
