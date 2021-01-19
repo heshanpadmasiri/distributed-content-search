@@ -12,11 +12,11 @@ import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 class QueryListenerTest {
     AbstractFileTransferService fileTransferService;
+    FileHandler fileHandler;
     QueryListener queryListener;
     Thread queryListenerThread;
     final int QUERY_LISTENER_PORT = 7555;
@@ -24,6 +24,8 @@ class QueryListenerTest {
     @BeforeEach
     void setUp() throws SocketException {
        fileTransferService = mock(AbstractFileTransferService.class);
+       fileHandler = mock(FileHandler.class);
+       when(fileTransferService.getFileHandler()).thenReturn(fileHandler);
        queryListener = new QueryListener(fileTransferService, QUERY_LISTENER_PORT);
        queryListenerThread = new Thread(queryListener);
        queryListenerThread.start();
@@ -48,5 +50,9 @@ class QueryListenerTest {
         sender.send(datagramPacket);
         TimeUnit.SECONDS.sleep(1);
         verify(executor).notify(message);
+        Node fileSource = new Node(InetAddress.getByName("129.82.128.1"), 2301);
+        verify(fileHandler).downloadFileToCache(fileSource,"baby_go_home.mp3");
+        verify(fileHandler).downloadFileToCache(fileSource,"baby_come_back.mp3");
+        verify(fileHandler).downloadFileToCache(fileSource,"baby.mpeg");
     }
 }

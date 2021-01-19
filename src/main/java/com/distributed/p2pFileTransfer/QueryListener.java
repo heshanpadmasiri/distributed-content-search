@@ -112,7 +112,7 @@ class QueryListener implements Runnable {
             try {
               Node source = new Node(InetAddress.getByName(data[3]), Integer.parseInt(data[4]));
               Stream.of(data)
-                  .skip(4)
+                  .skip(5)
                   .forEach(
                       fileName -> {
                         fileHandler.downloadFileToCache(source, fileName);
