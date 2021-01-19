@@ -45,7 +45,7 @@ class QueryListener implements Runnable {
         executorService.submit(new ListenerThread(message, origin));
         this.terminate = true;
       } catch (SocketTimeoutException e) {
-        System.out.println("Listener timeout");
+        logger.log(Level.INFO,"Listener timeout");
       } catch (IOException e) {
         throw new RuntimeException("IO exception in socket listener");
       }

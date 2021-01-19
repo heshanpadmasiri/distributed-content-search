@@ -6,6 +6,8 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class SocketListener implements Runnable {
     private String expectedMessage;
@@ -13,6 +15,7 @@ public class SocketListener implements Runnable {
     private DatagramSocket socket;
     private boolean terminate = false;
     Node node;
+    private Logger logger;
 
     public SocketListener(int port, String expectedMessage, String response)
             throws SocketException {
@@ -21,6 +24,7 @@ public class SocketListener implements Runnable {
         node = new Node(socket.getInetAddress(), port);
         this.expectedMessage = expectedMessage;
         this.response = response;
+        logger = Logger.getLogger(this.getClass().getName());
     }
     public SocketListener(int port, String expectedMessage)
             throws SocketException {
@@ -28,6 +32,7 @@ public class SocketListener implements Runnable {
         socket.setSoTimeout(1000);
         node = new Node(socket.getInetAddress(), port);
         this.expectedMessage = expectedMessage;
+        logger = Logger.getLogger(this.getClass().getName());
     }
 
     @Override
@@ -52,7 +57,7 @@ public class SocketListener implements Runnable {
                 }
                 this.terminate = true;
             } catch (SocketTimeoutException e) {
-                System.out.println("Listener timeout");
+                logger.log(Level.INFO,"Listener timeout");
             } catch (IOException e) {
                 throw new RuntimeException("IO exception in socket listener");
             }

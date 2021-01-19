@@ -9,6 +9,8 @@ import java.net.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -30,6 +32,7 @@ class QueryDispatcherTest {
     private boolean terminate = false;
     private Node node;
     private int messageCount = 0;
+    private Logger logger;
 
     public SocketListener(int port) throws SocketException {
       try {
@@ -40,8 +43,8 @@ class QueryDispatcherTest {
         socket.bind(new InetSocketAddress(port));
       }
       socket.setSoTimeout(1000);
-
       node = new Node(socket.getInetAddress(), port);
+      logger = Logger.getLogger(this.getClass().getName());
     }
 
     @Override
@@ -56,7 +59,7 @@ class QueryDispatcherTest {
             messageCount++;
           }
         } catch (SocketTimeoutException e) {
-          System.out.println("Listener timeout");
+          logger.log(Level.INFO,"Listener timeout");
         } catch (IOException e) {
           throw new RuntimeException("IO exception in socket listener");
         }
