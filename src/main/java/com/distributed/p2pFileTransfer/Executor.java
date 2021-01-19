@@ -77,25 +77,20 @@ class AcknowledgedQueryExecutor extends Executor {
 
 class FileSearchQueryExecutor extends AcknowledgedQueryExecutor {
   FileHandler fileHandler;
-  boolean cacheToLocal;
 
   public FileSearchQueryExecutor(
       Query query,
       DatagramSocket socket,
       QueryListener queryListener,
-      FileHandler fileHandler,
-      boolean cacheToLocal) {
+      FileHandler fileHandler
+      ) {
     super(query, socket, queryListener);
     this.fileHandler = fileHandler;
-    this.cacheToLocal = cacheToLocal;
   }
 
   @Override
   public QueryResult call() {
     QueryResult result = super.call();
-    if (cacheToLocal){
-      // todo : implement then download call
-    }
     return result;
   }
 }

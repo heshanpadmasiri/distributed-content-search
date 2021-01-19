@@ -37,8 +37,8 @@ class QueryDispatcher {
                 query,
                 socket,
                 fileTransferService.getQueryListener(),
-                fileTransferService.getFileHandler(),
-                false);
+                fileTransferService.getFileHandler()
+                );
         break;
       case "UNREG":
       case "JOIN":
