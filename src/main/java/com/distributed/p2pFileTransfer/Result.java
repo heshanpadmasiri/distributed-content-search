@@ -10,7 +10,8 @@ public abstract class Result {
     /**
      * Used to represent a result within the system. Never use directly but
      * extend to represent specific result types
-     * @param body representing the result
+     *
+     * @param body  representing the result
      * @param state representing the state of result. 0 represent success all other values represent an error
      */
     public Result(String body, int state) {
