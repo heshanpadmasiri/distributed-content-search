@@ -3,22 +3,56 @@ package com.distributed.p2pFileTransfer;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 class QueryDispatcher {
   private final AbstractFileTransferService fileTransferService;
   private DatagramSocket socket;
   private ExecutorService executorService;
-  //    private final QueryQueue;
+  private Logger logger;
 
   QueryDispatcher(AbstractFileTransferService fileTransferService, int port)
       throws SocketException {
     this.fileTransferService = fileTransferService;
     socket = fileTransferService.getQueryListener().getSocket();
     executorService = Executors.newCachedThreadPool();
+    logger = Logger.getLogger(this.getClass().getName());
+  }
+
+  private Executor getQueryExecutor(Query query){
+    Executor executor;
+    String queryType = query.body.split(" ")[1];
+    switch (queryType) {
+      case "SER":
+        executor =
+                new FileSearchQueryExecutor(
+                        query,
+                        socket,
+                        fileTransferService.getQueryListener(),
+                        fileTransferService.getFileHandler()
+                );
+        break;
+      case "UNREG":
+      case "JOIN":
+      case "LEAVE":
+      case "REG":
+        executor =
+                new AcknowledgedQueryExecutor(query, socket, fileTransferService.getQueryListener());
+        break;
+      case "SEROK":
+      case "UNREGOK":
+      case "JOINOK":
+      case "LEAVEOK":
+      case "REGOK":
+        executor =
+                new UnAcknowledgedQueryExecutor(query, socket, fileTransferService.getQueryListener());
+        break;
+      default:
+        throw new IllegalStateException("Unexpected value: " + queryType);
+    }
+    return executor;
   }
 
   /**
@@ -28,36 +62,7 @@ class QueryDispatcher {
    * @return result of query
    */
   Future<QueryResult> dispatchOne(Query query) {
-    Executor executor;
-    String queryType = query.body.split(" ")[1];
-    switch (queryType) {
-      case "SER":
-        executor =
-            new FileSearchQueryExecutor(
-                query,
-                socket,
-                fileTransferService.getQueryListener(),
-                fileTransferService.getFileHandler()
-                );
-        break;
-      case "UNREG":
-      case "JOIN":
-      case "LEAVE":
-      case "REG":
-        executor =
-            new AcknowledgedQueryExecutor(query, socket, fileTransferService.getQueryListener());
-        break;
-      case "SEROK":
-      case "UNREGOK":
-      case "JOINOK":
-      case "LEAVEOK":
-      case "REGOK":
-        executor =
-            new UnAcknowledgedQueryExecutor(query, socket, fileTransferService.getQueryListener());
-        break;
-      default:
-        throw new IllegalStateException("Unexpected value: " + queryType);
-    }
+    Executor executor = getQueryExecutor(query);
     return executorService.submit(executor);
   }
 
@@ -79,6 +84,16 @@ class QueryDispatcher {
    * @return result of any successful queries if any, else failure
    */
   Future<QueryResult> dispatchAny(List<Query> queries) {
-    return null;
+    List<Executor> executors = queries.stream().map(this::getQueryExecutor).collect(Collectors.toList());
+    Callable<QueryResult> dispatchTack = () -> {
+      QueryResult result = null;
+      try {
+        result = executorService.invokeAny(executors);
+      } catch (ExecutionException | InterruptedException e) {
+        e.printStackTrace();
+      }
+      return result;
+    };
+    return executorService.submit(dispatchTack);
   }
 }
