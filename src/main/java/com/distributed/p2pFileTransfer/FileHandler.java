@@ -1,5 +1,6 @@
 package com.distributed.p2pFileTransfer;
 
+import org.springframework.boot.SpringApplication;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -8,23 +9,35 @@ import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+
 public class FileHandler {
     //private AbstractFileTransferService fileTransferService;
     private String cacheDir;
     private String localDir;
     private long cacheSize;
     private final Storage fileStorage;
-    private ExecutorService executorService;
+    private final ExecutorService executorService;
     private final Logger logger;
 
-    FileHandler(String cacheDir, String localDir, long cacheSize) {
+    public FileHandler(String cacheDir, String localDir, long cacheSize) {
         this.cacheDir = cacheDir;
         this.localDir = localDir;
         this.cacheSize = cacheSize;
         logger = Logger.getLogger(this.getClass().getName());
         this.fileStorage = new Storage(cacheDir, localDir, cacheSize, this.getClass().getName());
         executorService = Executors.newFixedThreadPool(1);
+        runServer();
+
     }
+
+    /**
+     * Start the File Server
+     */
+    public static void runServer(){
+        SpringApplication.run(com.distributed.p2pFileTransfer.Main.class);
+        System.out.println("File server listening to incoming connections...");
+    }
+
 
     /**
      * Concrete implementation of file download

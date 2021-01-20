@@ -9,16 +9,23 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URLConnection;
 import java.util.List;
-import java.util.logging.Logger;
 
 @RestController
 public class EndPointController {
+
+    private Storage fileStorage;
+
+    @PostConstruct
+    public void initialize(){
+        fileStorage = new Storage("/home/kalana/distributed/content/cache_storage", "/home/kalana/distributed/content/local_storage", 10000000, this.getClass().getName());
+    }
 
     /**
      * Serve the requested File
@@ -30,9 +37,6 @@ public class EndPointController {
      */
     @RequestMapping("/file/{name:.+}")
     public ResponseEntity<Resource> downloadFile(HttpServletResponse res, @PathVariable("name") String fileName) throws IOException {
-
-        //TODO: Get these values from properties file
-        Storage fileStorage = new Storage("/home/kalana/distributed/content/cache_storage", "/home/kalana/distributed/content/local_storage", 10000000, this.getClass().getName());
 
         System.out.println("Attempting to download " + fileName);
         File file = fileStorage.getFile(fileName);
@@ -67,7 +71,6 @@ public class EndPointController {
      */
     @RequestMapping("/search/{name:.+}")
     public ResponseEntity<String> searchFile(HttpServletResponse res, @PathVariable("name") String fileName) {
-        Storage fileStorage = new Storage("/home/kalana/distributed/content/cache_storage", "/home/kalana/distributed/content/local_storage", 10000000, this.getClass().getName());
         List<String> matchingNames = fileStorage.searchForFile(fileName);
         String json = new Gson().toJson(matchingNames);
         return ResponseEntity.ok()
