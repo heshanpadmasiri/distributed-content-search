@@ -24,7 +24,7 @@ public class EndPointController {
 
     @PostConstruct
     public void initialize(){
-        fileStorage = new Storage("/home/kalana/distributed/content/cache_storage", "/home/kalana/distributed/content/local_storage", 10000000, this.getClass().getName());
+        fileStorage = new Storage("/home/kalana/distributed/content/server/cache_storage", "/home/kalana/distributed/content/server/local_storage", 10000000, this.getClass().getName());
     }
 
     /**
