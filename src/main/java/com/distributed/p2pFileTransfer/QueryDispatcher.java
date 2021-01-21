@@ -13,7 +13,7 @@ class QueryDispatcher {
   private ExecutorService executorService;
   private Logger logger;
 
-  QueryDispatcher(AbstractFileTransferService fileTransferService, int port)
+  QueryDispatcher(AbstractFileTransferService fileTransferService)
       throws SocketException {
     this.fileTransferService = fileTransferService;
     socket = fileTransferService.getQueryListener().getSocket();

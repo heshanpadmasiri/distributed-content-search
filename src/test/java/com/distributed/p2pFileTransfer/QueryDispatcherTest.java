@@ -6,7 +6,10 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -21,9 +24,10 @@ class QueryDispatcherTest {
   SocketListener socketListener;
   QueryDispatcher queryDispatcher;
   AbstractFileTransferService fileTransferService;
-  Thread socketThread;
+  Thread socketThread, queryListenerThread;
   QueryListener queryListener;
   private int socketListenerPort = 5555;
+  String responseMessage = "0114 SEROK 3 129.82.128.1 2301 messageReceived";
 
   private class SocketListener implements Runnable {
     private String lastMessage = "<None>";
@@ -42,7 +46,7 @@ class QueryDispatcherTest {
       }
       socket.setSoTimeout(10);
 
-      node = new Node(socket.getInetAddress(), port);
+      node = new Node(InetAddress.getLoopbackAddress(), port);
     }
 
     @Override
@@ -55,6 +59,11 @@ class QueryDispatcherTest {
           synchronized (lastMessage) {
             lastMessage = new String(buffer).split("\0")[0];
             messageCount++;
+            byte[] responseData = responseMessage.getBytes(StandardCharsets.UTF_8);
+            DatagramPacket responseDatagram =
+                new DatagramPacket(
+                    responseData, responseData.length, incoming.getAddress(), incoming.getPort());
+            socket.send(responseDatagram);
           }
         } catch (SocketTimeoutException ignored) {
         } catch (IOException e) {
@@ -102,9 +111,11 @@ class QueryDispatcherTest {
     }
     fileTransferService = mock(AbstractFileTransferService.class);
     queryListener = new QueryListener(fileTransferService, 5556);
+    queryListenerThread = new Thread(queryListener);
+    queryListenerThread.start();
     when(fileTransferService.getQueryListener()).thenReturn(queryListener);
     try {
-      queryDispatcher = new QueryDispatcher(fileTransferService, 5556);
+      queryDispatcher = new QueryDispatcher(fileTransferService);
     } catch (SocketException e) {
       throw new RuntimeException("Failed to start query dispatcher");
     }
@@ -119,6 +130,11 @@ class QueryDispatcherTest {
       throw new RuntimeException("Interrupt exception");
     }
     queryListener.stop();
+    try {
+      queryListenerThread.join(10);
+    } catch (InterruptedException e) {
+      throw new RuntimeException("Interrupt exception");
+    }
   }
 
   @Test
@@ -130,13 +146,13 @@ class QueryDispatcherTest {
     };
     for (String message : messages) {
       Query query = Query.createQuery(message, socketListener.toNode());
-      this.queryDispatcher.dispatchOne(query);
+      Future<QueryResult> response = this.queryDispatcher.dispatchOne(query);
       try {
-        TimeUnit.SECONDS.sleep(1);
-        String last = socketListener.getLastMessage();
+        QueryResult result = response.get();
+        String last = result.getBody();
         assertNotNull(last);
-        assertEquals(message, last);
-      } catch (InterruptedException e) {
+        assertEquals(responseMessage, last);
+      } catch (InterruptedException | ExecutionException e) {
         e.printStackTrace();
       }
     }
