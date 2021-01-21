@@ -16,7 +16,7 @@ class MainTests {
 
     String serverCacheDir = "/home/kalana/distributed/content/server/cache_storage";
     String serverLocalDir = "/home/kalana/distributed/content/server/local_storage";
-    String serverPort = "8000";
+    String serverPort = "7000";
 
     @BeforeEach
     public void setUp() {
