@@ -2,11 +2,14 @@ package com.distributed.p2pFileTransfer;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.*;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -18,19 +21,52 @@ class FreeNetFileTransferServiceTest {
   static Thread fileNodeThread;
   static Node fileNodeNode;
   static TestNode fileNode;
+  private AbstractFileTransferService fileTransferService;
 
   @Test
-  void searchForFile() {}
+  void searchForExistingFile() {
+    Future<List<String>> queryResultFuture = fileTransferService.searchForFile("Lord of the rings");
+    try {
+      List<String> result = queryResultFuture.get();
+      assertNotNull(result);
+      assertEquals(result.size(), 3);
+      assertTrue(result.contains("Lord of the rings"));
+      assertTrue(result.contains("abLord of the rings"));
+      assertTrue(result.contains("Lord of the ringsab"));
+      assertFalse(result.contains("testFile"));
+    } catch (InterruptedException | ExecutionException e) {
+      assertNull(e);
+    }
+  }
 
   @Test
-  void downloadFile() {}
+  void searchForNonExistingFile() {
+    Future<List<String>> queryResultFuture = fileTransferService.searchForFile("Non existing file");
+    try {
+      List<String> result = queryResultFuture.get();
+      assertNotNull(result);
+      assertEquals(result.size(), 0);
+    } catch (InterruptedException | ExecutionException e) {
+      assertNull(e);
+    }
+  }
+
+  @Test
+  void downloadExistingFileFile() {}
 
   @Test
   void downloadFileFrom() {}
 
+  @BeforeEach
+  void setUp() {
+    fileTransferService = new FreeNetFileTransferService();
+  }
+
   @BeforeAll
   static void beforeAll() {
-    List<String> files = Stream.of("Lord of the rings").collect(Collectors.toList());
+    List<String> files =
+        Stream.of("Lord of the rings", "abLord of the rings", "Lord of the ringsab", "testFile")
+            .collect(Collectors.toList());
     fileNode = new FileNode(1200, files);
     fileNodeNode = fileNode.getNode();
     fileNodeThread = new Thread(fileNodeThread);
