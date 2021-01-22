@@ -5,6 +5,10 @@ import java.util.List;
 import java.util.concurrent.Future;
 
 public class FreeNetFileTransferService extends AbstractFileTransferService{
+
+    public FreeNetFileTransferService(){
+        super(null, null, null, null);
+    }
     @Override
     public Future<List<String>> searchForFile(String query) {
         return null;

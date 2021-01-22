@@ -11,14 +11,21 @@ public abstract class AbstractFileTransferService {
   private QueryListener queryListener;
   private CommandBuilder commandBuilder;
 
-  /**
-   * Used to search for a file. This will flood the network and return all matching <b>unique</b>
-   * files. File is considered unique based on the file name
-   *
-   * @param query what to search for
-   * @return list of files matching the search query
-   */
-  public abstract Future<List<String>> searchForFile(String query);
+    public AbstractFileTransferService(Network network, FileHandler fileHandler, QueryDispatcher queryDispatcher, QueryListener queryListener) {
+        this.network = network;
+        this.fileHandler = fileHandler;
+        this.queryDispatcher = queryDispatcher;
+        this.queryListener = queryListener;
+    }
+
+    /**
+     * Used to search for a file. This will flood the network and return all matching <b>unique</b> files.
+     * File is considered unique based on the file name
+     *
+     * @param query what to search for
+     * @return list of files matching the search query
+     */
+    public abstract Future<List<String>> searchForFile(String query);
 
   /**
    * Used to download a file. Will download the first file that exactly matches the file name.
