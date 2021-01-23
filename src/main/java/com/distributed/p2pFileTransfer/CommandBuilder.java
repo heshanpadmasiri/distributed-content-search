@@ -47,6 +47,7 @@ public class CommandBuilder {
   }
 
   public String getLeaveCommand() {
-    return null;
+    String body = String.format("LEAVE %s %d", currentIp(), currentNode.getPort());
+    return String.format("%04d %s", body.length() + 5, body);
   }
 }

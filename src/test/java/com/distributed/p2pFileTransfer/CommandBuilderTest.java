@@ -75,7 +75,18 @@ class CommandBuilderTest {
   }
 
   @Test
-  void getLeaveCommand() {}
+  void getLeaveCommand() {
+    String response = commandBuilder.getLeaveCommand();
+    String[] data = response.split(" ");
+    int length = Integer.parseInt(data[0]);
+    String command = data[1];
+    String ip = data[2];
+    int port = Integer.parseInt(data[3]);
+    assertEquals(length, response.length());
+    assertEquals(command, "LEAVE");
+    assertEquals(ip, currentNode.getIpAddress().toString().split("/")[1]);
+    assertEquals(port, currentNode.getPort());
+  }
 
   @BeforeEach
   void setUp() throws UnknownHostException {
