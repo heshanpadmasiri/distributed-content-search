@@ -88,6 +88,30 @@ class CommandBuilderTest {
     assertEquals(port, currentNode.getPort());
   }
 
+  @Test
+  void getJoinOkCommand() {
+    String message = commandBuilder.getJoinOkCommand();
+    String[] data = message.split(" ");
+    int length = Integer.parseInt(data[0]);
+    String command = data[1];
+    int value = Integer.parseInt(data[2]);
+    assertEquals(length, message.length());
+    assertEquals(command, "JOINOK");
+    assertEquals(value, 0);
+  }
+
+  @Test
+  void getLeaveOkCommand() {
+    String message = commandBuilder.getLeaveOkCommand();
+    String[] data = message.split(" ");
+    int length = Integer.parseInt(data[0]);
+    String command = data[1];
+    int value = Integer.parseInt(data[2]);
+    assertEquals(length, message.length());
+    assertEquals(command, "LEAVEOK");
+    assertEquals(value, 0);
+  }
+
   @BeforeEach
   void setUp() throws UnknownHostException {
     currentNode = new Node(InetAddress.getLocalHost(), 5555);

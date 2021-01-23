@@ -50,8 +50,26 @@ public class CommandBuilder {
     return composeWithLength(body);
   }
 
+  public String getJoinOkCommand(int value){
+    String body = String.format("JOINOK %d",value);
+    return composeWithLength(body);
+  }
+
+  public String getJoinOkCommand(){
+    return getJoinOkCommand(0);
+  }
+
   public String getLeaveCommand() {
     String body = String.format("LEAVE %s %d", currentIp(), currentNode.getPort());
     return composeWithLength(body);
+  }
+
+  public String getLeaveOkCommand(int value){
+    String body = String.format("LEAVEOK %d",value);
+    return composeWithLength(body);
+  }
+
+  public String getLeaveOkCommand(){
+    return getLeaveOkCommand(0);
   }
 }
