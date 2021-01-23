@@ -42,7 +42,8 @@ public class CommandBuilder {
   }
 
   public String getJoinCommand() {
-    return null;
+    String body = String.format("JOIN %s %d", currentIp(), currentNode.getPort());
+    return String.format("%04d %s", body.length() + 5, body);
   }
 
   public String getLeaveCommand() {

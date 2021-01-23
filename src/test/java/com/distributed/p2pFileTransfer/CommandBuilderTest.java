@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -60,14 +61,25 @@ class CommandBuilderTest {
   }
 
   @Test
-  void getJoinCommand() {}
+  void getJoinCommand() {
+    String response = commandBuilder.getJoinCommand();
+    String[] data = response.split(" ");
+    int length = Integer.parseInt(data[0]);
+    String command = data[1];
+    String ip = data[2];
+    int port = Integer.parseInt(data[3]);
+    assertEquals(length, response.length());
+    assertEquals(command, "JOIN");
+    assertEquals(ip, currentNode.getIpAddress().toString().split("/")[1]);
+    assertEquals(port, currentNode.getPort());
+  }
 
   @Test
   void getLeaveCommand() {}
 
   @BeforeEach
-  void setUp() {
-    currentNode = new Node(InetAddress.getLoopbackAddress(), 5555);
+  void setUp() throws UnknownHostException {
+    currentNode = new Node(InetAddress.getLocalHost(), 5555);
     commandBuilder = CommandBuilder.getInstance(currentNode);
   }
 }
