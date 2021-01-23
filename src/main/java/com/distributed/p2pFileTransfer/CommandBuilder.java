@@ -14,20 +14,31 @@ public class CommandBuilder {
     if (instance == null) {
       instance = new CommandBuilder(currentNode);
     } else {
-      assert instance.currentNode == currentNode;
+      assert instance.currentNode.equals(currentNode);
     }
     return instance;
   }
 
   public String getSearchCommand(String fileName) {
-    int length = fileName.length() + 27;
+    int length = fileName.length() + 29;
     return String.format(
-        "%d SER %s %d \"%s\" -1",
-        length, currentNode.getIpAddress().toString().split("/")[1], currentNode.getPort(), fileName);
+        "%04d SER %s %d \"%s\" -1", length, currentIp(), currentNode.getPort(), fileName);
+  }
+
+  private String currentIp() {
+    return currentNode.getIpAddress().toString().split("/")[1];
   }
 
   public String getSearchOkCommand(List<String> files) {
-    return null;
+    StringBuilder builder =
+        new StringBuilder(
+            String.format(
+                "SEROK %d %s %d %d", files.size(), currentIp(), currentNode.getPort(), -1));
+    for (String file : files) {
+      builder.append(String.format(" %s", file));
+    }
+    String message = builder.toString().trim();
+    return String.format("%04d %s", message.length() + 5, message);
   }
 
   public String getJoinCommand() {
