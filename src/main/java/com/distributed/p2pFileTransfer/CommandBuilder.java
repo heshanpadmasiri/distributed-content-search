@@ -38,16 +38,20 @@ public class CommandBuilder {
       builder.append(String.format(" %s", file));
     }
     String message = builder.toString().trim();
-    return String.format("%04d %s", message.length() + 5, message);
+    return composeWithLength(message);
+  }
+
+  private String composeWithLength(String body) {
+    return String.format("%04d %s", body.length() + 5, body);
   }
 
   public String getJoinCommand() {
     String body = String.format("JOIN %s %d", currentIp(), currentNode.getPort());
-    return String.format("%04d %s", body.length() + 5, body);
+    return composeWithLength(body);
   }
 
   public String getLeaveCommand() {
     String body = String.format("LEAVE %s %d", currentIp(), currentNode.getPort());
-    return String.format("%04d %s", body.length() + 5, body);
+    return composeWithLength(body);
   }
 }
