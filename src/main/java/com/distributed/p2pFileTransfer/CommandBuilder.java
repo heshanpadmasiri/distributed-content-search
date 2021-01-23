@@ -5,12 +5,13 @@ import java.util.List;
 public class CommandBuilder {
   Node currentNode;
   static CommandBuilder instance;
-  private CommandBuilder(Node node){
+
+  private CommandBuilder(Node node) {
     currentNode = node;
   }
 
-  public static CommandBuilder getInstance(Node currentNode){
-    if(instance == null){
+  public static CommandBuilder getInstance(Node currentNode) {
+    if (instance == null) {
       instance = new CommandBuilder(currentNode);
     } else {
       assert instance.currentNode == currentNode;
@@ -19,7 +20,10 @@ public class CommandBuilder {
   }
 
   public String getSearchCommand(String fileName) {
-    return null;
+    int length = fileName.length() + 27;
+    return String.format(
+        "%d SER %s %d \"%s\" -1",
+        length, currentNode.getIpAddress().toString().split("/")[1], currentNode.getPort(), fileName);
   }
 
   public String getSearchOkCommand(List<String> files) {
