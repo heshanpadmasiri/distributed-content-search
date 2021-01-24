@@ -5,9 +5,13 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.regex.Pattern;
@@ -22,6 +26,10 @@ class FreeNetFileTransferServiceTest {
   static Node fileNodeNode;
   static TestNode fileNode;
   private AbstractFileTransferService fileTransferService;
+  private static Path cache_dir;
+  private static Path local_dir;
+  private static Properties config;
+
 
   @Test
   void searchForExistingFile() {
@@ -58,8 +66,8 @@ class FreeNetFileTransferServiceTest {
   void downloadFileFrom() {}
 
   @BeforeEach
-  void setUp() {
-    fileTransferService = new FreeNetFileTransferService();
+  void setUp() throws SocketException {
+    fileTransferService = FreeNetFileTransferService.getInstance(config);
   }
 
   @BeforeAll
@@ -71,10 +79,33 @@ class FreeNetFileTransferServiceTest {
     fileNodeNode = fileNode.getNode();
     fileNodeThread = new Thread(fileNodeThread);
     fileNodeThread.start();
+
+    Path currentRelativePath = Paths.get("");
+    cache_dir = Paths.get(currentRelativePath.toString(), "cache");
+    local_dir = Paths.get(currentRelativePath.toString(), "local");
+    cache_dir.toFile().mkdir();
+    local_dir.toFile().mkdir();
+    config = new Properties();
+    config.setProperty("cache_dir", cache_dir.toString());
+    config.setProperty("local_dir", local_dir.toString());
+    config.setProperty("cache_size", "15");
+    config.setProperty("port", "5555");
+  }
+
+  private static void deleteDir(File dir) {
+    File[] contents = dir.listFiles();
+    if (contents != null) {
+      for (File f : contents) {
+        deleteDir(f);
+      }
+    }
+    dir.delete();
   }
 
   @AfterAll
   static void afterAll() throws InterruptedException {
+    deleteDir(cache_dir.toFile());
+    deleteDir(local_dir.toFile());
     fileNode.setTerminate(true);
     fileNodeThread.join();
   }
