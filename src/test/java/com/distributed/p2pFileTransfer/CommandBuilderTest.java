@@ -112,6 +112,38 @@ class CommandBuilderTest {
     assertEquals(value, 0);
   }
 
+  @Test
+  void getRegisterCommand() {
+    String message = commandBuilder.getRegisterCommand("user");
+    String[] data = message.split(" ");
+    int length = Integer.parseInt(data[0]);
+    String command = data[1];
+    String ip = data[2];
+    int port = Integer.parseInt(data[3]);
+    String userName = data[4];
+    assertEquals(length, message.length());
+    assertEquals(command, "REG");
+    assertEquals(ip, currentNode.getIpAddress().toString().split("/")[1]);
+    assertEquals(port, currentNode.getPort());
+    assertEquals(userName, "user");
+  }
+
+  @Test
+  void getUnRegisterCommand() {
+    String message = commandBuilder.getUnRegisterCommand("user");
+    String[] data = message.split(" ");
+    int length = Integer.parseInt(data[0]);
+    String command = data[1];
+    String ip = data[2];
+    int port = Integer.parseInt(data[3]);
+    String userName = data[4];
+    assertEquals(length, message.length());
+    assertEquals(command, "UNREG");
+    assertEquals(ip, currentNode.getIpAddress().toString().split("/")[1]);
+    assertEquals(port, currentNode.getPort());
+    assertEquals(userName, "user");
+  }
+
   @BeforeEach
   void setUp() throws UnknownHostException {
     currentNode = new Node(InetAddress.getLocalHost(), 5555);
