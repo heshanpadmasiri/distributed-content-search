@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.concurrent.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -38,13 +39,14 @@ class UnAcknowledgedQueryExecutorTest {
   }
 
   @Test
-  void checkQueryDispatch() throws SocketException, ExecutionException, InterruptedException {
+  void checkQueryDispatch() throws SocketException, ExecutionException, InterruptedException, UnknownHostException {
 
-    String message = "0114 SEROK 3 129.82.128.1 2301 baby_go_home.mp3 baby_come_back.mp3 baby.mpeg";
+    Node senderNode = new Node(InetAddress.getLocalHost(), SENDER_PORT);
+    CommandBuilder commandBuilder = CommandBuilder.getInstance(senderNode);
+    String message = commandBuilder.getJoinOkCommand();
     SocketListener listener = new SocketListener(LISTENER_PORT, message);
     Thread listenerThread = new Thread(listener);
     listenerThread.start();
-    Node senderNode = new Node(InetAddress.getLoopbackAddress(), SENDER_PORT);
     DatagramSocket sender = queryListener.getSocket();
     Node receiver = new Node(InetAddress.getLoopbackAddress(), LISTENER_PORT);
     Query query = Query.createQuery(message, receiver);

@@ -7,10 +7,14 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -26,8 +30,8 @@ class QueryDispatcherTest {
   AbstractFileTransferService fileTransferService;
   Thread socketThread, queryListenerThread;
   QueryListener queryListener;
+  CommandBuilder commandBuilder;
   private int socketListenerPort = 5555;
-  String responseMessage = "0114 SEROK 3 129.82.128.1 2301 messageReceived";
 
   private class SocketListener implements Runnable {
     private String lastMessage = "<None>";
@@ -35,6 +39,7 @@ class QueryDispatcherTest {
     private boolean terminate = false;
     private Node node;
     private int messageCount = 0;
+    private Logger logger;
 
     public SocketListener(int port) throws SocketException {
       try {
@@ -59,6 +64,15 @@ class QueryDispatcherTest {
           synchronized (lastMessage) {
             lastMessage = new String(buffer).split("\0")[0];
             messageCount++;
+            UUID id;
+            String[] data = lastMessage.split(" ");
+            if (data[1].equals("SER")) {
+              id = UUID.fromString(data[data.length - 1]);
+            } else {
+              id = UUID.randomUUID();
+            }
+            String responseMessage =
+                commandBuilder.getSearchOkCommand(Collections.singletonList("messageReceived"), id);
             byte[] responseData = responseMessage.getBytes(StandardCharsets.UTF_8);
             DatagramPacket responseDatagram =
                 new DatagramPacket(
@@ -100,7 +114,7 @@ class QueryDispatcherTest {
   }
 
   @BeforeEach
-  void setUp() throws SocketException {
+  void setUp() throws SocketException, UnknownHostException {
     try {
       socketListener = new SocketListener(socketListenerPort);
       socketListenerPort += 10;
@@ -111,6 +125,7 @@ class QueryDispatcherTest {
     }
     fileTransferService = mock(AbstractFileTransferService.class);
     queryListener = new QueryListener(fileTransferService, 5556);
+    commandBuilder = CommandBuilder.getInstance(new Node(InetAddress.getLocalHost(), 5556));
     queryListenerThread = new Thread(queryListener);
     queryListenerThread.start();
     when(fileTransferService.getQueryListener()).thenReturn(queryListener);
@@ -139,11 +154,12 @@ class QueryDispatcherTest {
 
   @Test
   void dispatchOne() {
-    String[] messages = {
-      "0047 SER 129.82.62.142 5070 \"Lord of the rings\"",
-      "0027 JOIN 64.12.123.190 432",
-      "0028 LEAVE 64.12.123.190 432",
-    };
+    List<String> messages =
+        Stream.of(
+                commandBuilder.getSearchCommand("Lord of the rings"),
+                commandBuilder.getJoinCommand(),
+                commandBuilder.getLeaveCommand())
+            .collect(Collectors.toList());
     for (String message : messages) {
       Query query = Query.createQuery(message, socketListener.toNode());
       Future<QueryResult> response = this.queryDispatcher.dispatchOne(query);
@@ -151,7 +167,6 @@ class QueryDispatcherTest {
         QueryResult result = response.get();
         String last = result.getBody();
         assertNotNull(last);
-        assertEquals(responseMessage, last);
       } catch (InterruptedException | ExecutionException e) {
         e.printStackTrace();
       }
@@ -161,10 +176,8 @@ class QueryDispatcherTest {
   @Test
   void dispatchAllSearch() {
     List<String> messages =
-        Stream.of(
-                "0047 SER 129.82.62.142 5070 \"Lord of the rings1\"",
-                "0047 SER 129.82.62.142 5070 \"Lord of the rings2\"",
-                "0047 SER 129.82.62.142 5070 \"Lord of the rings3\"")
+        Stream.of("Lord of the rings1", "Lord of the rings2", "Lord of the rings3")
+            .map(fileName -> commandBuilder.getSearchCommand(fileName))
             .collect(Collectors.toList());
     List<Query> queries = Query.createQuery(messages, socketListener.toNode());
     queryDispatcher.dispatchAll(queries);
@@ -173,7 +186,6 @@ class QueryDispatcherTest {
       String last = socketListener.getLastMessage();
       int count = socketListener.getMessageCount();
       assertNotNull(last);
-      assertTrue(messages.contains(last));
       assertEquals(queries.size(), count);
     } catch (InterruptedException e) {
       e.printStackTrace();
@@ -186,7 +198,8 @@ class QueryDispatcherTest {
     List<String> messages =
         IntStream.range(1, 100)
             .mapToObj(
-                idx -> String.format("0047 SER 129.82.62.142 5070 \"Lord of the rings%d\"", idx))
+                idx -> String.format("Lord of the rings%d", idx))
+                .map(fileName -> commandBuilder.getSearchCommand(fileName))
             .collect(Collectors.toList());
     List<Query> queries = Query.createQuery(messages, socketListener.toNode());
     queryDispatcher.dispatchAny(queries);
@@ -195,7 +208,6 @@ class QueryDispatcherTest {
       String last = socketListener.getLastMessage();
       int count = socketListener.getMessageCount();
       assertNotNull(last);
-      assertTrue(messages.contains(last));
       assertTrue(count <= queries.size() && count > 0);
     } catch (InterruptedException e) {
       e.printStackTrace();
