@@ -1,6 +1,8 @@
 package com.distributed.p2pFileTransfer;
 
 import java.util.List;
+import java.util.UUID;
+import java.util.regex.Pattern;
 
 public class CommandBuilder {
   Node currentNode;
@@ -32,9 +34,10 @@ public class CommandBuilder {
    * @return file search string
    */
   public String getSearchCommand(String fileName) {
-    int length = fileName.length() + 29;
-    return String.format(
-        "%04d SER %s %d \"%s\" -1", length, currentIp(), currentNode.getPort(), fileName);
+    assert ! Pattern.matches(".*<id>.*",fileName);
+    String body = String.format(
+            "SER %s %d \"%s\" <id>",currentIp(), currentNode.getPort(), fileName);
+    return composeWithLength(body);
   }
 
   private String currentIp() {
@@ -47,11 +50,11 @@ public class CommandBuilder {
    * @param files names of the files matching the search query
    * @return file search success string
    */
-  public String getSearchOkCommand(List<String> files) {
+  public String getSearchOkCommand(List<String> files, UUID queryId) {
     StringBuilder builder =
         new StringBuilder(
             String.format(
-                "SEROK %d %s %d %d", files.size(), currentIp(), currentNode.getPort(), -1));
+                "SEROK %d %s %d %s", files.size(), currentIp(), currentNode.getPort(), queryId));
     for (String file : files) {
       builder.append(String.format(" %s", file));
     }
