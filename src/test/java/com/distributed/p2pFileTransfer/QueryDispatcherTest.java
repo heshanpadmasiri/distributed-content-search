@@ -141,7 +141,7 @@ class QueryDispatcherTest {
   void tearDown() {
     this.socketListener.stop();
     try {
-      socketThread.join();
+      socketThread.join(10);
     } catch (InterruptedException e) {
       throw new RuntimeException("Interrupt exception");
     }
