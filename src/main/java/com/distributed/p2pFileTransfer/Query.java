@@ -19,7 +19,7 @@ public class Query {
    */
   private Query(String body, Node destination) {
     this.id = UUID.randomUUID();
-    this.body = body.replaceAll(".*<id>.*", id.toString());
+    this.body = body.replaceAll("<id>", id.toString());
     this.destination = destination;
   }
 
