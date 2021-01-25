@@ -1,6 +1,7 @@
 package com.distributed.p2pFileTransfer;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -72,11 +73,11 @@ class QueryDispatcherTest {
               id = UUID.randomUUID();
             }
             String responseMessage =
-                commandBuilder.getSearchOkCommand(Collections.singletonList("messageReceived"), id);
+                    commandBuilder.getSearchOkCommand(Collections.singletonList("messageReceived"), id);
             byte[] responseData = responseMessage.getBytes(StandardCharsets.UTF_8);
             DatagramPacket responseDatagram =
-                new DatagramPacket(
-                    responseData, responseData.length, incoming.getAddress(), incoming.getPort());
+                    new DatagramPacket(
+                            responseData, responseData.length, incoming.getAddress(), incoming.getPort());
             socket.send(responseDatagram);
           }
         } catch (SocketTimeoutException ignored) {
@@ -155,11 +156,11 @@ class QueryDispatcherTest {
   @Test
   void dispatchOne() {
     List<String> messages =
-        Stream.of(
-                commandBuilder.getSearchCommand("Lord of the rings"),
-                commandBuilder.getJoinCommand(),
-                commandBuilder.getLeaveCommand())
-            .collect(Collectors.toList());
+            Stream.of(
+                    commandBuilder.getSearchCommand("Lord of the rings"),
+                    commandBuilder.getJoinCommand(),
+                    commandBuilder.getLeaveCommand())
+                    .collect(Collectors.toList());
     for (String message : messages) {
       Query query = Query.createQuery(message, socketListener.toNode());
       Future<QueryResult> response = this.queryDispatcher.dispatchOne(query);
@@ -176,41 +177,42 @@ class QueryDispatcherTest {
   @Test
   void dispatchAllSearch() {
     List<String> messages =
-        Stream.of("Lord of the rings1", "Lord of the rings2", "Lord of the rings3")
-            .map(fileName -> commandBuilder.getSearchCommand(fileName))
-            .collect(Collectors.toList());
+            Stream.of("Lord of the rings1", "Lord of the rings2", "Lord of the rings3")
+                    .map(fileName -> commandBuilder.getSearchCommand(fileName))
+                    .collect(Collectors.toList());
     List<Query> queries = Query.createQuery(messages, socketListener.toNode());
-    queryDispatcher.dispatchAll(queries);
-    try {
-      TimeUnit.SECONDS.sleep(1);
-      String last = socketListener.getLastMessage();
-      int count = socketListener.getMessageCount();
-      assertNotNull(last);
-      assertEquals(queries.size(), count);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
+    List<Future<QueryResult>> futures = queryDispatcher.dispatchAll(queries);
+    List<QueryResult> results =
+            futures.stream()
+                    .map(
+                            each -> {
+                              QueryResult result = null;
+                              try {
+                                result = each.get();
+                              } catch (InterruptedException | ExecutionException e) {
+                                e.printStackTrace();
+                              }
+                              return result;
+                            })
+                    .collect(Collectors.toList());
+    results.forEach(Assertions::assertNotNull);
+    int count = socketListener.getMessageCount();
+    assertEquals(queries.size(), count);
   }
 
   @Test
-  void dispatchAnySearch() {
-
+  void dispatchAnySearch() throws ExecutionException, InterruptedException {
     List<String> messages =
-        IntStream.range(1, 100)
-            .mapToObj(
-                idx -> String.format("Lord of the rings%d", idx))
-                .map(fileName -> commandBuilder.getSearchCommand(fileName))
-            .collect(Collectors.toList());
+            IntStream.range(1, 100)
+                    .mapToObj(idx -> String.format("Lord of the rings%d", idx))
+                    .map(fileName -> commandBuilder.getSearchCommand(fileName))
+                    .collect(Collectors.toList());
     List<Query> queries = Query.createQuery(messages, socketListener.toNode());
-    queryDispatcher.dispatchAny(queries);
-    try {
-      TimeUnit.SECONDS.sleep(1);
-      String last = socketListener.getLastMessage();
-      int count = socketListener.getMessageCount();
-      assertNotNull(last);
-      assertTrue(count <= queries.size() && count > 0);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
+    QueryResult result = queryDispatcher.dispatchAny(queries).get();
+    assertNotNull(result);
+    String last = socketListener.getLastMessage();
+    int count = socketListener.getMessageCount();
+    assertNotNull(last);
+    assertTrue(count <= queries.size() && count > 0);
   }
 }

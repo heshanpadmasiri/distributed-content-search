@@ -45,7 +45,7 @@ class QueryListenerTest {
         Executor executor = mock(Executor.class);
         DatagramSocket sender = new DatagramSocket(SENDER_PORT);
         Node senderNode =  new Node(InetAddress.getLoopbackAddress(), SENDER_PORT);
-        Node receiver = new Node(InetAddress.getLocalHost(), QUERY_LISTENER_PORT);
+        Node receiver = new Node(InetAddress.getLoopbackAddress(), QUERY_LISTENER_PORT);
         queryListener.registerForResponse(senderNode, executor);
         CommandBuilder commandBuilder = CommandBuilder.getInstance(senderNode);
         String message =
@@ -56,8 +56,7 @@ class QueryListenerTest {
         byte[] data = message.getBytes(StandardCharsets.UTF_8);
         DatagramPacket datagramPacket = new DatagramPacket(data, data.length, receiver.getSocketAddress());
         sender.send(datagramPacket);
-        TimeUnit.SECONDS.sleep(1);
-        verify(executor).notify(message);
+        verify(executor, timeout(5000).atLeastOnce()).notify(message);
         verify(fileHandler).downloadFileToCache(senderNode,"baby_go_home.mp3");
         verify(fileHandler).downloadFileToCache(senderNode,"baby_come_back.mp3");
         verify(fileHandler).downloadFileToCache(senderNode,"baby.mpeg");

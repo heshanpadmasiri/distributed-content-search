@@ -1,12 +1,11 @@
 package com.distributed.p2pFileTransfer;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Pattern;
 
 public class CommandBuilder {
   Node currentNode;
-  static CommandBuilder instance;
+  static Map<Node, CommandBuilder> instances = new HashMap<>();
 
   private CommandBuilder(Node node) {
     currentNode = node;
@@ -19,12 +18,13 @@ public class CommandBuilder {
    * @return Command builder singleton with current node
    */
   public static CommandBuilder getInstance(Node currentNode) {
-    if (instance == null) {
-      instance = new CommandBuilder(currentNode);
-    } else {
-      assert instance.currentNode.equals(currentNode);
+    if (instances.containsKey(currentNode)){
+      return instances.get(currentNode);
+    } else{
+      CommandBuilder commandBuilder = new CommandBuilder(currentNode);
+      instances.put(currentNode, commandBuilder);
+      return commandBuilder;
     }
-    return instance;
   }
 
   /**
