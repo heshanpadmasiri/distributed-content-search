@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -42,7 +43,8 @@ class CommandBuilderTest {
   void getSearchOkCommand() {
     List<String> fileNames =
             Stream.of("fileName1", "fileNameA2", "fileNameAAAB3").collect(Collectors.toList());
-    String response = commandBuilder.getSearchOkCommand(fileNames);
+    UUID id = UUID.randomUUID();
+    String response = commandBuilder.getSearchOkCommand(fileNames, id);
     String[] data = response.split(" ");
     int length = Integer.parseInt(data[0]);
     String command = data[1];
@@ -57,7 +59,7 @@ class CommandBuilderTest {
     assertEquals(port, currentNode.getPort());
     assertEquals(file_count, res_files.size());
     assertEquals(res_files, fileNames);
-    assertEquals(hops, "<id>");
+    assertEquals(hops, id.toString());
   }
 
   @Test
