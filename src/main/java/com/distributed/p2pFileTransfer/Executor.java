@@ -44,7 +44,7 @@ class AcknowledgedQueryExecutor extends Executor {
     // todo : check if the message is a response for the message we send
     response = message;
     responseReceived = true;
-    logger.log(Level.INFO, String.format("Message received %s", message));
+    logger.log(Level.INFO, String.format("Message received %s for query %s", message, query.id));
     synchronized (monitor) {
       monitor.notifyAll();
     }
@@ -71,6 +71,7 @@ class AcknowledgedQueryExecutor extends Executor {
         }
       }
     }
+    logger.log(Level.INFO, String.format("Query %s handled successfully", query.id));
     return new QueryResult(response, 0, query);
   }
 }

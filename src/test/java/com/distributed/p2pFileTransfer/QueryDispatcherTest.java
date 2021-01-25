@@ -59,7 +59,7 @@ class QueryDispatcherTest {
           synchronized (lastMessage) {
             lastMessage = new String(buffer).split("\0")[0];
             messageCount++;
-            byte[] responseData = responseMessage.getBytes(StandardCharsets.UTF_8);
+            byte[] responseData = String.format("%s %d", responseMessage, messageCount).getBytes(StandardCharsets.UTF_8);
             DatagramPacket responseDatagram =
                 new DatagramPacket(
                     responseData, responseData.length, incoming.getAddress(), incoming.getPort());
@@ -167,17 +167,19 @@ class QueryDispatcherTest {
                 "0047 SER 129.82.62.142 5070 \"Lord of the rings3\"")
             .collect(Collectors.toList());
     List<Query> queries = Query.createQuery(messages, socketListener.toNode());
-    queryDispatcher.dispatchAll(queries);
-    try {
-      TimeUnit.SECONDS.sleep(1);
-      String last = socketListener.getLastMessage();
-      int count = socketListener.getMessageCount();
-      assertNotNull(last);
-      assertTrue(messages.contains(last));
-      assertEquals(queries.size(), count);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
+    List<Future<QueryResult>> futures = queryDispatcher.dispatchAll(queries);
+    futures.forEach(future -> {
+      try {
+        future.get();
+      } catch (InterruptedException | ExecutionException e) {
+        e.printStackTrace();
+      }
+    });
+    String last = socketListener.getLastMessage();
+    int count = socketListener.getMessageCount();
+    assertNotNull(last);
+    assertTrue(messages.contains(last));
+    assertEquals(queries.size(), count);
   }
 
   @Test
