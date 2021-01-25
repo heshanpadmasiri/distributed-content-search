@@ -10,7 +10,10 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.mockito.Mockito.*;
 
@@ -44,7 +47,12 @@ class QueryListenerTest {
         Node senderNode =  new Node(InetAddress.getLoopbackAddress(), SENDER_PORT);
         Node receiver = new Node(InetAddress.getLoopbackAddress(), QUERY_LISTENER_PORT);
         queryListener.registerForResponse(senderNode, executor);
-        String message = "0114 SEROK 3 129.82.128.1 2301 baby_go_home.mp3 baby_come_back.mp3 baby.mpeg";
+        CommandBuilder commandBuilder = CommandBuilder.getInstance(senderNode);
+        String message =
+                commandBuilder.getSearchOkCommand(
+                        Stream.of("baby_go_home.mp3", "baby_come_back.mp3", "baby.mpeg")
+                                .collect(Collectors.toList()),
+                        UUID.randomUUID());
         byte[] data = message.getBytes(StandardCharsets.UTF_8);
         DatagramPacket datagramPacket = new DatagramPacket(data, data.length, receiver.getSocketAddress());
         sender.send(datagramPacket);

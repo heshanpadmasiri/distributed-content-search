@@ -90,6 +90,16 @@ class FileSearchQueryExecutor extends AcknowledgedQueryExecutor {
   }
 
   @Override
+  public void notify(String message) {
+    String[] data = message.split(" ");
+    String command = data[1];
+    String id = data[5];
+    if(command.equals("SEROK") && id.equals(query.id.toString())){
+      super.notify(message);
+    }
+  }
+
+  @Override
   public QueryResult call() {
     QueryResult result = super.call();
     return result;

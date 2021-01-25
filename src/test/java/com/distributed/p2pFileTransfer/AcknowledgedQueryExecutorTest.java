@@ -12,6 +12,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -42,20 +44,24 @@ class AcknowledgedQueryExecutorTest {
   }
 
   @Test
-  void checkQueryDispatch()
-      throws SocketException, ExecutionException, InterruptedException {
-
-    String message = "0047 SER 129.82.62.142 5070 \"Lord of the rings\"";
-    String expectedResponse = "0114 SEROK 3 129.82.128.1 2301 baby_go_home.mp3 baby_come_back.mp3 baby.mpeg";
-    SocketListener listener = new SocketListener(LISTENER_PORT, message, expectedResponse);
-    Thread listenerThread  = new Thread(listener);
-    listenerThread.start();
-
+  void checkQueryDispatch() throws SocketException, ExecutionException, InterruptedException {
     Node senderNode = new Node(InetAddress.getLoopbackAddress(), SENDER_PORT);
+    CommandBuilder commandBuilder = CommandBuilder.getInstance(senderNode);
+    String message = commandBuilder.getSearchCommand("Lord of the rings");
     DatagramSocket sender = queryListener.getSocket();
     Node receiver = new Node(InetAddress.getLoopbackAddress(), LISTENER_PORT);
     Query query = Query.createQuery(message, receiver);
-    AcknowledgedQueryExecutor searchQueryExecutor = new AcknowledgedQueryExecutor(query, sender, queryListener);
+    String expectedResponse =
+        commandBuilder.getSearchOkCommand(
+            Stream.of("baby_go_home.mp3", "baby_come_back.mp3", "baby.mpeg")
+                .collect(Collectors.toList()),
+            query.id);
+    SocketListener listener = new SocketListener(LISTENER_PORT, query.body, expectedResponse);
+    Thread listenerThread = new Thread(listener);
+    listenerThread.start();
+
+    AcknowledgedQueryExecutor searchQueryExecutor =
+        new AcknowledgedQueryExecutor(query, sender, queryListener);
     Future<QueryResult> queryResultFuture = executorService.submit(searchQueryExecutor);
     QueryResult result = queryResultFuture.get();
     assertEquals(result.state, 0);
@@ -63,5 +69,4 @@ class AcknowledgedQueryExecutorTest {
     assertEquals(result.query, query);
     listenerThread.join(10);
   }
-
 }
