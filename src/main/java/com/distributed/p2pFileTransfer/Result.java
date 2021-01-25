@@ -19,4 +19,16 @@ public abstract class Result {
         this.id = UUID.randomUUID();
         this.state = state;
     }
+
+    public String getBody() {
+        return body;
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public int getState() {
+        return state;
+    }
 }

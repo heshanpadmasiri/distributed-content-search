@@ -6,12 +6,15 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.*;
-import java.util.Arrays;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -23,8 +26,10 @@ class QueryDispatcherTest {
   SocketListener socketListener;
   QueryDispatcher queryDispatcher;
   AbstractFileTransferService fileTransferService;
-  Thread socketThread;
+  Thread socketThread, queryListenerThread;
   QueryListener queryListener;
+  private int socketListenerPort = 5555;
+  String responseMessage = "0114 SEROK 3 129.82.128.1 2301 messageReceived";
 
   private class SocketListener implements Runnable {
     private String lastMessage = "<None>";
@@ -42,9 +47,9 @@ class QueryDispatcherTest {
         socket.setReuseAddress(true);
         socket.bind(new InetSocketAddress(port));
       }
-      socket.setSoTimeout(1000);
-      node = new Node(socket.getInetAddress(), port);
-      logger = Logger.getLogger(this.getClass().getName());
+      socket.setSoTimeout(10);
+
+      node = new Node(InetAddress.getLoopbackAddress(), port);
     }
 
     @Override
@@ -57,17 +62,19 @@ class QueryDispatcherTest {
           synchronized (lastMessage) {
             lastMessage = new String(buffer).split("\0")[0];
             messageCount++;
+            byte[] responseData = responseMessage.getBytes(StandardCharsets.UTF_8);
+            DatagramPacket responseDatagram =
+                new DatagramPacket(
+                    responseData, responseData.length, incoming.getAddress(), incoming.getPort());
+            socket.send(responseDatagram);
           }
-        } catch (SocketTimeoutException e) {
-          logger.log(Level.INFO,"Listener timeout");
+        } catch (SocketTimeoutException ignored) {
         } catch (IOException e) {
           throw new RuntimeException("IO exception in socket listener");
         }
       }
-      while (socket.isBound()) {
-        socket.disconnect();
-        socket.close();
-      }
+      socket.disconnect();
+      socket.close();
     }
 
     public String getLastMessage() {
@@ -98,7 +105,8 @@ class QueryDispatcherTest {
   @BeforeEach
   void setUp() throws SocketException {
     try {
-      socketListener = new SocketListener(5555);
+      socketListener = new SocketListener(socketListenerPort);
+      socketListenerPort += 10;
       socketThread = new Thread(socketListener);
       socketThread.start();
     } catch (SocketException e) {
@@ -106,9 +114,11 @@ class QueryDispatcherTest {
     }
     fileTransferService = mock(AbstractFileTransferService.class);
     queryListener = new QueryListener(fileTransferService, 5556);
+    queryListenerThread = new Thread(queryListener);
+    queryListenerThread.start();
     when(fileTransferService.getQueryListener()).thenReturn(queryListener);
     try {
-      queryDispatcher = new QueryDispatcher(fileTransferService, 5556);
+      queryDispatcher = new QueryDispatcher(fileTransferService);
     } catch (SocketException e) {
       throw new RuntimeException("Failed to start query dispatcher");
     }
@@ -118,11 +128,16 @@ class QueryDispatcherTest {
   void tearDown() {
     this.socketListener.stop();
     try {
-      socketThread.join(10);
+      socketThread.join();
     } catch (InterruptedException e) {
       throw new RuntimeException("Interrupt exception");
     }
     queryListener.stop();
+    try {
+      queryListenerThread.join(10);
+    } catch (InterruptedException e) {
+      throw new RuntimeException("Interrupt exception");
+    }
   }
 
   @Test
@@ -134,13 +149,13 @@ class QueryDispatcherTest {
     };
     for (String message : messages) {
       Query query = Query.createQuery(message, socketListener.toNode());
-      this.queryDispatcher.dispatchOne(query);
+      Future<QueryResult> response = this.queryDispatcher.dispatchOne(query);
       try {
-        TimeUnit.SECONDS.sleep(1);
-        String last = socketListener.getLastMessage();
+        QueryResult result = response.get();
+        String last = result.getBody();
         assertNotNull(last);
-        assertEquals(message, last);
-      } catch (InterruptedException e) {
+        assertEquals(responseMessage, last);
+      } catch (InterruptedException | ExecutionException e) {
         e.printStackTrace();
       }
     }
@@ -163,6 +178,28 @@ class QueryDispatcherTest {
       assertNotNull(last);
       assertTrue(messages.contains(last));
       assertEquals(queries.size(), count);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+  }
+
+  @Test
+  void dispatchAnySearch() {
+
+    List<String> messages =
+        IntStream.range(1, 100)
+            .mapToObj(
+                idx -> String.format("0047 SER 129.82.62.142 5070 \"Lord of the rings%d\"", idx))
+            .collect(Collectors.toList());
+    List<Query> queries = Query.createQuery(messages, socketListener.toNode());
+    queryDispatcher.dispatchAny(queries);
+    try {
+      TimeUnit.SECONDS.sleep(1);
+      String last = socketListener.getLastMessage();
+      int count = socketListener.getMessageCount();
+      assertNotNull(last);
+      assertTrue(messages.contains(last));
+      assertTrue(count <= queries.size() && count > 0);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
