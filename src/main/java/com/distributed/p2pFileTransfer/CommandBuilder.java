@@ -1,6 +1,7 @@
 package com.distributed.p2pFileTransfer;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class CommandBuilder {
   Node currentNode;
@@ -32,9 +33,10 @@ public class CommandBuilder {
    * @return file search string
    */
   public String getSearchCommand(String fileName) {
-    int length = fileName.length() + 29;
-    return String.format(
-        "%04d SER %s %d \"%s\" -1", length, currentIp(), currentNode.getPort(), fileName);
+    assert ! Pattern.matches(".*<id>.*",fileName);
+    String body = String.format(
+            "SER %s %d \"%s\" <id>",currentIp(), currentNode.getPort(), fileName);
+    return composeWithLength(body);
   }
 
   private String currentIp() {
@@ -51,7 +53,7 @@ public class CommandBuilder {
     StringBuilder builder =
         new StringBuilder(
             String.format(
-                "SEROK %d %s %d %d", files.size(), currentIp(), currentNode.getPort(), -1));
+                "SEROK %d %s %d <id>", files.size(), currentIp(), currentNode.getPort()));
     for (String file : files) {
       builder.append(String.format(" %s", file));
     }

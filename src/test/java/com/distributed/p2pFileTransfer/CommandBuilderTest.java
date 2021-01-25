@@ -28,13 +28,13 @@ class CommandBuilderTest {
       String ip = data[2];
       int port = Integer.parseInt(data[3]);
       String file = data[4];
-      int hops = Integer.parseInt(data[5]);
+      String hops = data[5];
       assertEquals(length, command.length());
       assertEquals(c, "SER");
       assertEquals(ip, currentNode.getIpAddress().toString().split("/")[1]);
       assertEquals(port, currentNode.getPort());
       assertEquals(file, String.format("\"%s\"", fileName));
-      assertEquals(hops, -1);
+      assertEquals(hops, "<id>");
     }
   }
 
@@ -49,7 +49,7 @@ class CommandBuilderTest {
     int file_count = Integer.parseInt(data[2]);
     String ip = data[3];
     int port = Integer.parseInt(data[4]);
-    int hops = Integer.parseInt(data[5]);
+    String hops = data[5];
     List<String> res_files = IntStream.range(6, data.length).mapToObj(idx -> data[idx]).collect(Collectors.toList());
     assertEquals(length, response.length());
     assertEquals(command, "SEROK");
@@ -57,7 +57,7 @@ class CommandBuilderTest {
     assertEquals(port, currentNode.getPort());
     assertEquals(file_count, res_files.size());
     assertEquals(res_files, fileNames);
-    assertEquals(hops, -1);
+    assertEquals(hops, "<id>");
   }
 
   @Test
