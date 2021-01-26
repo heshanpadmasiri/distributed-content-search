@@ -32,7 +32,7 @@ class QueryDispatcherTest {
   Thread socketThread, queryListenerThread;
   QueryListener queryListener;
   CommandBuilder commandBuilder;
-  private int socketListenerPort = 5555;
+  private int socketListenerPort = 6555;
 
   private class SocketListener implements Runnable {
     private String lastMessage = "<None>";
