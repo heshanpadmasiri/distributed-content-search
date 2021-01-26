@@ -1,6 +1,7 @@
 package com.distributed.p2pFileTransfer;
 
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.*;
@@ -11,18 +12,18 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
 
   private static FreeNetFileTransferService instance;
   private ExecutorService executorService;
+  private Thread queryListenerThread;
 
-  public static synchronized FreeNetFileTransferService getInstance(Properties configuration)
-      throws SocketException {
+  public static synchronized FreeNetFileTransferService getInstance(Properties configuration, Network network)
+          throws SocketException, UnknownHostException {
     if (instance == null) {
       // todo: replace with concrete implementation
-      Network network = null;
       FileHandler fileHandler =
           new FileHandler(
               configuration.getProperty("cache_dir"),
               configuration.getProperty("local_dir"),
               Integer.parseInt(configuration.getProperty("cache_size")),
-                  configuration.getProperty("port"));
+                  configuration.getProperty("server_port"));
       instance =
           new FreeNetFileTransferService(
               network, fileHandler, Integer.parseInt(configuration.getProperty("port")));
@@ -31,9 +32,11 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
   }
 
   private FreeNetFileTransferService(Network network, FileHandler fileHandler, int port)
-      throws SocketException {
+          throws SocketException, UnknownHostException {
     super(network, fileHandler, port);
     this.executorService = Executors.newCachedThreadPool();
+    queryListenerThread = new Thread(this.getQueryListener());
+    queryListenerThread.start();
   }
 
   @Override
@@ -83,4 +86,15 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
   @Override
   public void downloadFileFrom(String fileName, Path destination, Node source)
       throws FileNotFoundException, DestinationAlreadyExistsException, NodeNotFoundException {}
+
+    @Override
+    void stop() {
+        super.stop();
+        this.getQueryListener().stop();
+        try {
+            this.queryListenerThread.join(10);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
 }

@@ -1,6 +1,7 @@
 package com.distributed.p2pFileTransfer;
 
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -11,12 +12,15 @@ public abstract class AbstractFileTransferService {
   private QueryDispatcher queryDispatcher;
   private QueryListener queryListener;
   private CommandBuilder commandBuilder;
+  private Node currentNode;
 
-  public AbstractFileTransferService(Network network, FileHandler fileHandler, int port) throws SocketException {
+  public AbstractFileTransferService(Network network, FileHandler fileHandler, int port) throws SocketException, UnknownHostException {
     this.network = network;
     this.fileHandler = fileHandler;
     this.queryListener = new QueryListener(this, port);
     this.queryDispatcher = new QueryDispatcher(this);
+    this.currentNode = new Node(port);
+    this.commandBuilder = CommandBuilder.getInstance(currentNode);
   }
 
   /**
@@ -73,5 +77,8 @@ public abstract class AbstractFileTransferService {
 
   CommandBuilder getCommandBuilder() {
     return commandBuilder;
+  }
+
+  void stop(){
   }
 }

@@ -10,15 +10,19 @@ import java.io.IOException;
 import java.net.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class FreeNetFileTransferServiceTest {
 
@@ -66,9 +70,24 @@ class FreeNetFileTransferServiceTest {
   void downloadFileFrom() {}
 
   @BeforeEach
-  void setUp() throws SocketException {
-    fileTransferService = FreeNetFileTransferService.getInstance(config);
+  void setUp() throws SocketException, UnknownHostException {
+    Network networkMock = mock(Network.class);
+    when(networkMock.getNeighbours()).thenReturn(new Iterator<Node>() {
+      int remaining = 1;
+      @Override
+      public boolean hasNext() {
+        return remaining > 0;
+      }
+
+      @Override
+      public Node next() {
+        remaining--;
+        return fileNodeNode;
+      }
+    });
+    fileTransferService = FreeNetFileTransferService.getInstance(config, networkMock);
   }
+
 
   @BeforeAll
   static void beforeAll() {
@@ -77,7 +96,7 @@ class FreeNetFileTransferServiceTest {
             .collect(Collectors.toList());
     fileNode = new FileNode(1200, files);
     fileNodeNode = fileNode.getNode();
-    fileNodeThread = new Thread(fileNodeThread);
+    fileNodeThread = new Thread(fileNode);
     fileNodeThread.start();
 
     Path currentRelativePath = Paths.get("");
@@ -90,6 +109,7 @@ class FreeNetFileTransferServiceTest {
     config.setProperty("local_dir", local_dir.toString());
     config.setProperty("cache_size", "15");
     config.setProperty("port", "1234");
+    config.setProperty("server_port", "4321");
   }
 
   private static void deleteDir(File dir) {
@@ -112,36 +132,32 @@ class FreeNetFileTransferServiceTest {
 
   private static class FileNode extends TestNode {
     List<String> filesInNode;
+    Pattern fileNamePattern;
+    CommandBuilder commandBuilder;
 
     public FileNode(int port, List<String> filesInNode) {
       super(port);
       this.filesInNode = filesInNode;
+      fileNamePattern = Pattern.compile(".*\"(.*)\".*");
+      commandBuilder = CommandBuilder.getInstance(getNode());
     }
 
     @Override
     protected String getResponse(String received) {
-      String targetQuery = received.split(" ")[4];
+      Matcher matcher = fileNamePattern.matcher(received);
+      String targetQuery = "<None>";
+      if (matcher.find()){
+        targetQuery = matcher.group(1);
+      }
+      String[] data = received.split(" ");
+      UUID id = UUID.fromString(data[data.length-1]);
+      String finalTargetQuery = targetQuery;
       List<String> matchingFiles =
           filesInNode.stream()
               .filter(
-                  fileName -> {
-                    return Pattern.matches(String.format("*%s*", fileName), targetQuery);
-                  })
+                  fileName -> Pattern.matches(String.format(".*%s.*", finalTargetQuery), fileName))
               .collect(Collectors.toList());
-      StringBuilder responseBuilder =
-          new StringBuilder(
-              String.format(
-                  "SEROK %d %s %d -1",
-                  matchingFiles.size(),
-                  InetAddress.getLoopbackAddress().toString(),
-                  getNode().getPort()));
-      matchingFiles.forEach(
-          fileName -> {
-            responseBuilder.append(String.format("%s ", fileName));
-          });
-      String message = responseBuilder.toString().trim();
-      int length = message.length() * 2 + (4 * 2) + 2;
-      message = String.format("%04d %s", length, message);
+      String message = commandBuilder.getSearchOkCommand(matchingFiles, id);
       return message;
     }
   }
