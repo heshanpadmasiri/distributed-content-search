@@ -42,9 +42,9 @@ class FreeNetFileTransferServiceTest {
       List<String> result = queryResultFuture.get();
       assertNotNull(result);
       assertEquals(result.size(), 3);
-      assertTrue(result.contains("Lord of the rings"));
-      assertTrue(result.contains("abLord of the rings"));
-      assertTrue(result.contains("Lord of the ringsab"));
+      assertTrue(result.contains("Lord_of_the_rings"));
+      assertTrue(result.contains("abLord_of_the_rings"));
+      assertTrue(result.contains("Lord_of_the_ringsab"));
       assertFalse(result.contains("testFile"));
     } catch (InterruptedException | ExecutionException e) {
       assertNull(e);
