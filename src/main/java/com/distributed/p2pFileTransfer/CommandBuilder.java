@@ -2,6 +2,7 @@ package com.distributed.p2pFileTransfer;
 
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class CommandBuilder {
   Node currentNode;
@@ -18,9 +19,9 @@ public class CommandBuilder {
    * @return Command builder singleton with current node
    */
   public static CommandBuilder getInstance(Node currentNode) {
-    if (instances.containsKey(currentNode)){
+    if (instances.containsKey(currentNode)) {
       return instances.get(currentNode);
-    } else{
+    } else {
       CommandBuilder commandBuilder = new CommandBuilder(currentNode);
       instances.put(currentNode, commandBuilder);
       return commandBuilder;
@@ -34,9 +35,9 @@ public class CommandBuilder {
    * @return file search string
    */
   public String getSearchCommand(String fileName) {
-    assert ! Pattern.matches(".*<id>.*",fileName);
-    String body = String.format(
-            "SER %s %d \"%s\" <id>",currentIp(), currentNode.getPort(), fileName);
+    assert !Pattern.matches(".*<id>.*", fileName);
+    String body =
+        String.format("SER %s %d \"%s\" <id>", currentIp(), currentNode.getPort(), fileName);
     return composeWithLength(body);
   }
 
@@ -51,11 +52,13 @@ public class CommandBuilder {
    * @return file search success string
    */
   public String getSearchOkCommand(List<String> files, UUID queryId) {
+    List<String> transformedFileNames =
+        files.stream().map(fileName -> fileName.replaceAll(" ", "_")).collect(Collectors.toList());
     StringBuilder builder =
         new StringBuilder(
             String.format(
                 "SEROK %d %s %d %s", files.size(), currentIp(), currentNode.getPort(), queryId));
-    for (String file : files) {
+    for (String file : transformedFileNames) {
       builder.append(String.format(" %s", file));
     }
     String message = builder.toString().trim();
