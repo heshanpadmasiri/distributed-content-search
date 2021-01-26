@@ -21,7 +21,8 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
           new FileHandler(
               configuration.getProperty("cache_dir"),
               configuration.getProperty("local_dir"),
-              Integer.parseInt(configuration.getProperty("cache_size")));
+              Integer.parseInt(configuration.getProperty("cache_size")),
+                  configuration.getProperty("port"));
       instance =
           new FreeNetFileTransferService(
               network, fileHandler, Integer.parseInt(configuration.getProperty("port")));

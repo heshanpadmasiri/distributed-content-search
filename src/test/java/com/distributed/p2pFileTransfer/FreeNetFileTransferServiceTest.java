@@ -89,7 +89,7 @@ class FreeNetFileTransferServiceTest {
     config.setProperty("cache_dir", cache_dir.toString());
     config.setProperty("local_dir", local_dir.toString());
     config.setProperty("cache_size", "15");
-    config.setProperty("port", "5555");
+    config.setProperty("port", "1234");
   }
 
   private static void deleteDir(File dir) {
