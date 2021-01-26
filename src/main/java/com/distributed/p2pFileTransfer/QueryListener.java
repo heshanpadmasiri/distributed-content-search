@@ -110,6 +110,7 @@ class QueryListener implements Runnable {
           if (numberOfFiles > 0) {
             try {
               Node source = new Node(InetAddress.getByName(data[3]), Integer.parseInt(data[4]));
+              //todo: check if the file names are correct
               Stream.of(data)
                   .skip(6)
                   .forEach(
