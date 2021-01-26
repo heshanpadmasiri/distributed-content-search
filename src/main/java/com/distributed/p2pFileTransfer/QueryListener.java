@@ -43,7 +43,6 @@ class QueryListener implements Runnable {
         String message = new String(buffer).split("\0")[0];
         Node origin = new Node(incoming.getAddress(), incoming.getPort());
         executorService.submit(new ListenerThread(message, origin));
-        this.terminate = true;
       } catch (SocketTimeoutException e) {
         logger.log(Level.INFO,"Listener timeout");
       } catch (IOException e) {
@@ -111,8 +110,9 @@ class QueryListener implements Runnable {
           if (numberOfFiles > 0) {
             try {
               Node source = new Node(InetAddress.getByName(data[3]), Integer.parseInt(data[4]));
+              //todo: check if the file names are correct
               Stream.of(data)
-                  .skip(5)
+                  .skip(6)
                   .forEach(
                       fileName -> {
                         fileHandler.downloadFileToCache(source, fileName);

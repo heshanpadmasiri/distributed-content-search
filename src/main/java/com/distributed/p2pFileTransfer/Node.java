@@ -1,8 +1,6 @@
 package com.distributed.p2pFileTransfer;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
+import java.net.*;
 import java.util.Objects;
 
 public class Node {
@@ -21,6 +19,10 @@ public class Node {
         this.ipAddress = ipAddress;
         this.port = port;
         socketAddress = new InetSocketAddress(this.ipAddress, port);
+    }
+
+    public Node(int port) throws UnknownHostException {
+        this(InetAddress.getLocalHost(), port);
     }
 
     public InetAddress getIpAddress() {
