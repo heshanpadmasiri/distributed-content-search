@@ -1,19 +1,21 @@
 package com.distributed.p2pFileTransfer;
 
-import sun.rmi.runtime.Log;
-
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-abstract class Network {
+class Network {
 
     private final AbstractFileTransferService fileTransferService;
     private final Node boostrapServer;
 
-    private TreeMap<Integer, ArrayList<Node>> routingTable;
+//    private TreeMap<Integer, ArrayList<Node>> treeMap;
+//    private Map routingTable = Collections.synchronizedMap(treeMap);
+
+    private TreeMap<Integer, ArrayList<Node>> routingTable =
+            new TreeMap<Integer, ArrayList<Node>>(Collections.reverseOrder()); ;
 
     private QueryDispatcher queryDispatcher;
     private ResponseHandler responseHandler;
@@ -54,7 +56,7 @@ abstract class Network {
             }
         }
 
-        // add the neighbour nodes returned by BS
+        // add the neighbour nodes returned by BS to the routing table
         if(response.body != null) {
             responseHandler = new ResponseHandler();
             HashMap<String,String> formattedResponse = responseHandler.handleRegisterResponse(response.body);
@@ -68,12 +70,14 @@ abstract class Network {
                         Node node = new Node(InetAddress.getByName(formattedResponse.get("IP_1")),
                                 Integer.parseInt(formattedResponse.get("port_1")));
                         routingTable.get(0).add(node);
+                        // join
                     }
                     if (formattedResponse.get("IP_2") != null) {
                         Node node = new Node(InetAddress.getByName(formattedResponse.get("IP_1")),
                                 Integer.parseInt(formattedResponse.get("port_2")));
                         addNeighbour(node);
                         routingTable.get(0).add(node);
+                        // join
                     }
                 } catch (UnknownHostException e) {
                     System.out.println("IP error");
@@ -97,8 +101,18 @@ abstract class Network {
      *
      * @return iterator of neighbours. Ordering depends on the implementation
      */
-    Iterator<Node> getNeighbours() {
-        return null;
+    ArrayList<Node> getNeighbours() {
+        // have to change the method params returned
+        ArrayList<Node> out  = new ArrayList<Node>();
+
+        for(Map.Entry<Integer,ArrayList<Node>> entityArry : routingTable.entrySet()) {
+            for(Node entity: entityArry.getValue()) {
+                out.add(entity);
+            }
+        }
+
+
+        return out;
     }
 
     /**
@@ -107,7 +121,7 @@ abstract class Network {
      * @throws NodeNotFoundException if unable to connect to the boostrap server
      */
     void resetNetwork() throws NodeNotFoundException {
-
+        routingTable.clear();
         return;
     }
 
@@ -138,6 +152,8 @@ abstract class Network {
             }
         }
     }
+
+
 
     Query buildRegQuery(Node node) {
         StringBuilder sb = new StringBuilder(" ");
