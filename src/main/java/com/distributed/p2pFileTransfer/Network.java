@@ -36,26 +36,29 @@ class Network {
      * @param boostrapServer
      * @throws NodeNotFoundException If unable to connect with the boostrap server
      */
-    public Network(AbstractFileTransferService fileTransferService, Node boostrapServer) throws SocketException {
+    public Network(AbstractFileTransferService fileTransferService, Node boostrapServer) throws NodeNotFoundException {
         this.fileTransferService = fileTransferService;
         this.boostrapServer = boostrapServer;
 
         // register with the BS
-        QueryResult response;
-        queryDispatcher = new QueryDispatcher(fileTransferService);
-        CommandBuilder cb = CommandBuilder.getInstance(node);
-        while(true) {
-            try {
-                Query query = Query.createQuery(cb.getRegisterCommand("user"),node);
-                response = queryDispatcher.dispatchOne(query).get();
-                if (response.state == 0) {
-                    break;
+        QueryResult response = null;
+        try {
+            queryDispatcher = new QueryDispatcher(fileTransferService);
+            CommandBuilder cb = CommandBuilder.getInstance(node);
+            while (true) {
+                try {
+                    Query query = Query.createQuery(cb.getRegisterCommand("user"), node);
+                    response = queryDispatcher.dispatchOne(query).get();
+                    if (response.state == 0) {
+                        break;
+                    }
+                } catch (ExecutionException | InterruptedException e) {
+                    // e.printStackTrace();
+                    System.out.println("Error occured");
                 }
             }
-            catch(ExecutionException | InterruptedException e){
-                // e.printStackTrace();
-                System.out.println("Error occured");
-            }
+        } catch (SocketException e) {
+            System.out.println(e);
         }
 
         // add the neighbour nodes returned by BS to the routing table
