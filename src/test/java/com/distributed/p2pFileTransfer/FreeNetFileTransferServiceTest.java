@@ -147,31 +147,40 @@ class FreeNetFileTransferServiceTest {
     List<String> filesInNode;
     Pattern fileNamePattern;
     CommandBuilder commandBuilder;
+    private Logger logger;
 
     public FileNode(int port, List<String> filesInNode) {
       super(port);
       this.filesInNode = filesInNode;
       fileNamePattern = Pattern.compile(".*\"(.*)\".*");
       commandBuilder = CommandBuilder.getInstance(getNode());
+      logger = Logger.getLogger(this.getClass().getName());
     }
 
     @Override
     protected String getResponse(String received) {
-      Matcher matcher = fileNamePattern.matcher(received);
-      String targetQuery = "<None>";
-      if (matcher.find()) {
-        targetQuery = matcher.group(1);
+      String[] _data = received.split(" ");
+      if (_data[1].equals("JOIN")) {
+        return commandBuilder.getJoinOkCommand();
+      } else {
+        Matcher matcher = fileNamePattern.matcher(received);
+        String targetQuery = "<None>";
+        if (matcher.find()) {
+          targetQuery = matcher.group(1);
+        }
+        String[] data = received.split(" ");
+        UUID id = UUID.fromString(data[data.length - 1]);
+        String finalTargetQuery = targetQuery;
+        List<String> matchingFiles =
+            filesInNode.stream()
+                .filter(
+                    fileName ->
+                        Pattern.matches(String.format(".*%s.*", finalTargetQuery), fileName))
+                .collect(Collectors.toList());
+        String message = commandBuilder.getSearchOkCommand(matchingFiles, id);
+        logger.log(Level.INFO, String.format("received: %s response: %s", received, message));
+        return message;
       }
-      String[] data = received.split(" ");
-      UUID id = UUID.fromString(data[data.length - 1]);
-      String finalTargetQuery = targetQuery;
-      List<String> matchingFiles =
-          filesInNode.stream()
-              .filter(
-                  fileName -> Pattern.matches(String.format(".*%s.*", finalTargetQuery), fileName))
-              .collect(Collectors.toList());
-      String message = commandBuilder.getSearchOkCommand(matchingFiles, id);
-      return message;
     }
   }
 
