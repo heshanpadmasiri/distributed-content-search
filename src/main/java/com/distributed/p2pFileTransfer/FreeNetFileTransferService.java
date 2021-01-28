@@ -1,5 +1,6 @@
 package com.distributed.p2pFileTransfer;
 
+import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
@@ -12,31 +13,28 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
 
   private static FreeNetFileTransferService instance;
   private ExecutorService executorService;
-  private Thread queryListenerThread;
 
-  public static synchronized FreeNetFileTransferService getInstance(Properties configuration, Network network)
-          throws SocketException, UnknownHostException {
+  public static synchronized FreeNetFileTransferService getInstance(Properties configuration)
+          throws SocketException, UnknownHostException, NodeNotFoundException {
     if (instance == null) {
-      // todo: replace with concrete implementation
       FileHandler fileHandler =
           new FileHandler(
               configuration.getProperty("cache_dir"),
               configuration.getProperty("local_dir"),
               Integer.parseInt(configuration.getProperty("cache_size")),
                   configuration.getProperty("server_port"));
+      Node bootstrapServer = new Node(InetAddress.getByName(configuration.getProperty("boostrap_server_ip")), Integer.parseInt(configuration.getProperty("boostrap_server_port")));
       instance =
           new FreeNetFileTransferService(
-              network, fileHandler, Integer.parseInt(configuration.getProperty("port")));
+              fileHandler, Integer.parseInt(configuration.getProperty("port")), bootstrapServer);
     }
     return instance;
   }
 
-  private FreeNetFileTransferService(Network network, FileHandler fileHandler, int port)
-          throws SocketException, UnknownHostException {
-    super(network, fileHandler, port);
+  private FreeNetFileTransferService(FileHandler fileHandler, int port, Node boostrapServer)
+          throws SocketException, UnknownHostException, NodeNotFoundException {
+    super(fileHandler, port, boostrapServer);
     this.executorService = Executors.newCachedThreadPool();
-    queryListenerThread = new Thread(this.getQueryListener());
-    queryListenerThread.start();
   }
 
   @Override
@@ -90,11 +88,5 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
     @Override
     void stop() {
         super.stop();
-        this.getQueryListener().stop();
-        try {
-            this.queryListenerThread.join(10);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 }

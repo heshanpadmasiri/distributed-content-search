@@ -44,7 +44,7 @@ class QueryListener implements Runnable {
         Node origin = new Node(incoming.getAddress(), incoming.getPort());
         executorService.submit(new ListenerThread(message, origin));
       } catch (SocketTimeoutException e) {
-        logger.log(Level.INFO,"Listener timeout");
+        logger.log(Level.INFO, "Listener timeout");
       } catch (IOException e) {
         throw new RuntimeException("IO exception in socket listener");
       }
@@ -110,7 +110,7 @@ class QueryListener implements Runnable {
           if (numberOfFiles > 0) {
             try {
               Node source = new Node(InetAddress.getByName(data[3]), Integer.parseInt(data[4]));
-              //todo: check if the file names are correct
+              // todo: check if the file names are correct
               Stream.of(data)
                   .skip(6)
                   .forEach(
@@ -124,6 +124,16 @@ class QueryListener implements Runnable {
                       "Failed to get Inet address ipAddress: %s port: %s", data[3], data[4]));
             }
           }
+          break;
+        case "REGOK":
+        case "JOINOK":
+        case "LEAVEOK":
+          pendingExecutors
+              .get(origin)
+              .forEach(
+                  (executor) -> {
+                    executor.notify(message);
+                  });
           break;
         default:
           throw new IllegalStateException("Unexpected value: " + queryType);
