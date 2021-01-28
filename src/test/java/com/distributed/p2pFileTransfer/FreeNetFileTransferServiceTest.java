@@ -70,7 +70,7 @@ class FreeNetFileTransferServiceTest {
   void downloadFileFrom() {}
 
   @BeforeEach
-  void setUp() throws SocketException, UnknownHostException {
+  void setUp() throws SocketException, UnknownHostException, NodeNotFoundException {
     Network networkMock = mock(Network.class);
     when(networkMock.getNeighbours()).thenReturn(new Iterator<Node>() {
       int remaining = 1;
@@ -85,7 +85,7 @@ class FreeNetFileTransferServiceTest {
         return fileNodeNode;
       }
     });
-    fileTransferService = FreeNetFileTransferService.getInstance(config, networkMock);
+    fileTransferService = FreeNetFileTransferService.getInstance(config);
   }
 
 

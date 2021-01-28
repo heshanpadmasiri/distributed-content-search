@@ -14,8 +14,8 @@ public abstract class AbstractFileTransferService {
   private CommandBuilder commandBuilder;
   private Node currentNode;
 
-  public AbstractFileTransferService(Network network, FileHandler fileHandler, int port) throws SocketException, UnknownHostException {
-    this.network = network;
+  public AbstractFileTransferService(FileHandler fileHandler, int port, Node bootstrapServer) throws SocketException, UnknownHostException, NodeNotFoundException {
+    this.network = new Network(this, bootstrapServer);
     this.fileHandler = fileHandler;
     this.queryListener = new QueryListener(this, port);
     this.queryDispatcher = new QueryDispatcher(this);
