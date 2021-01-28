@@ -197,7 +197,7 @@ class FreeNetFileTransferServiceTest {
     public BoostStrapServerNode(int port, int otherNodePort) throws UnknownHostException {
       super(port);
       this.otherNodePort = otherNodePort;
-      this.otherNodeIp = InetAddress.getLocalHost().toString().split("/")[1];
+      this.otherNodeIp = "127.0.0.1";
       logger = Logger.getLogger(this.getClass().getName());
     }
 
