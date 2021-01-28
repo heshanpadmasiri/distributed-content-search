@@ -118,7 +118,7 @@ class FreeNetFileTransferServiceTest {
     config.setProperty("cache_size", "15");
     config.setProperty("port", "1234");
     config.setProperty("server_port", "4321");
-    config.setProperty("boostrap_server_ip", InetAddress.getLocalHost().toString().split("/")[1]);
+    config.setProperty("boostrap_server_ip", "127.0.0.1");
     config.setProperty("boostrap_server_port", "1201");
   }
 
