@@ -13,7 +13,6 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
 
   private static FreeNetFileTransferService instance;
   private ExecutorService executorService;
-  private Thread queryListenerThread;
 
   public static synchronized FreeNetFileTransferService getInstance(Properties configuration)
           throws SocketException, UnknownHostException, NodeNotFoundException {
@@ -36,8 +35,6 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
           throws SocketException, UnknownHostException, NodeNotFoundException {
     super(fileHandler, port, boostrapServer);
     this.executorService = Executors.newCachedThreadPool();
-    queryListenerThread = new Thread(this.getQueryListener());
-    queryListenerThread.start();
   }
 
   @Override
@@ -91,11 +88,5 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
     @Override
     void stop() {
         super.stop();
-        this.getQueryListener().stop();
-        try {
-            this.queryListenerThread.join(10);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 }

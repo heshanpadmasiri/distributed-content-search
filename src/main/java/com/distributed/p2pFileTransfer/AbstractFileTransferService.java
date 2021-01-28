@@ -13,6 +13,7 @@ public abstract class AbstractFileTransferService {
   private QueryListener queryListener;
   private CommandBuilder commandBuilder;
   private Node currentNode;
+  private Thread queryListenerThread;
 
   public AbstractFileTransferService(FileHandler fileHandler, int port, Node bootstrapServer) throws SocketException, UnknownHostException, NodeNotFoundException {
     this.fileHandler = fileHandler;
@@ -20,6 +21,8 @@ public abstract class AbstractFileTransferService {
     this.queryDispatcher = new QueryDispatcher(this);
     this.currentNode = new Node(port);
     this.commandBuilder = CommandBuilder.getInstance(currentNode);
+    queryListenerThread = new Thread(this.queryListener);
+    queryListenerThread.start();
     this.network = new Network(this, bootstrapServer);
   }
 
@@ -80,5 +83,11 @@ public abstract class AbstractFileTransferService {
   }
 
   void stop(){
+    queryListener.stop();
+    try {
+      queryListenerThread.join();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
   }
 }
