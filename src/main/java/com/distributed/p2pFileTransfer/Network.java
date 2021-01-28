@@ -42,10 +42,12 @@ class Network {
 
         // register with the BS
         QueryResult response;
-        queryDispatcher = new QueryDispatcher(fileTransferService, boostrapServer.getPort());
+        queryDispatcher = new QueryDispatcher(fileTransferService);
+        CommandBuilder cb = CommandBuilder.getInstance(node);
         while(true) {
             try {
-                response = queryDispatcher.dispatchOne(buildRegQuery(node)).get();
+                Query query = Query.createQuery(cb.getRegisterCommand("user"),node);
+                response = queryDispatcher.dispatchOne(query).get();
                 if (response.state == 0) {
                     break;
                 }
@@ -101,18 +103,15 @@ class Network {
      *
      * @return iterator of neighbours. Ordering depends on the implementation
      */
-    ArrayList<Node> getNeighbours() {
+    Iterator<Node> getNeighbours() {
         // have to change the method params returned
-        ArrayList<Node> out  = new ArrayList<Node>();
+        ArrayList<Node> list  = new ArrayList<Node>();
 
         for(Map.Entry<Integer,ArrayList<Node>> entityArry : routingTable.entrySet()) {
-            for(Node entity: entityArry.getValue()) {
-                out.add(entity);
-            }
+            list.addAll(entityArry.getValue());
         }
 
-
-        return out;
+        return list.iterator();
     }
 
     /**
@@ -155,29 +154,29 @@ class Network {
 
 
 
-    Query buildRegQuery(Node node) {
-        StringBuilder sb = new StringBuilder(" ");
-        sb.append(REG);
-        sb.append(" ");
-        sb.append(node.getIpAddress());
-        sb.append(" ");
-        sb.append(USERNAME);
-
-        int length = sb.length();
-        StringBuilder sb1 = new StringBuilder();
-        int count = length;
-        while (length%10!=0) {
-            sb1.append("0");
-            length/=10;
-        }
-        sb1.append(count);
-        sb1.append(sb);
-
-        String body = sb1.toString();
-        Query query = Query.createQuery(body,node);
-
-        return query;
-    }
+//    Query buildRegQuery(Node node) {
+//        StringBuilder sb = new StringBuilder(" ");
+//        sb.append(REG);
+//        sb.append(" ");
+//        sb.append(node.getIpAddress());
+//        sb.append(" ");
+//        sb.append(USERNAME);
+//
+//        int length = sb.length();
+//        StringBuilder sb1 = new StringBuilder();
+//        int count = length;
+//        while (length%10!=0) {
+//            sb1.append("0");
+//            length/=10;
+//        }
+//        sb1.append(count);
+//        sb1.append(sb);
+//
+//        String body = sb1.toString();
+//        Query query = Query.createQuery(body,node);
+//
+//        return query;
+//    }
 
 
 
