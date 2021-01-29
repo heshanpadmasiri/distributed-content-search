@@ -8,160 +8,165 @@ import java.util.concurrent.ExecutionException;
 
 class Network {
 
-    private final AbstractFileTransferService fileTransferService;
-    private final Node boostrapServer;
+  private final AbstractFileTransferService fileTransferService;
+  private final Node boostrapServer;
 
-//    private TreeMap<Integer, ArrayList<Node>> treeMap;
-//    private Map routingTable = Collections.synchronizedMap(treeMap);
+  //    private TreeMap<Integer, ArrayList<Node>> treeMap;
+  //    private Map routingTable = Collections.synchronizedMap(treeMap);
 
-    private TreeMap<Integer, ArrayList<Node>> routingTable =
-            new TreeMap<Integer, ArrayList<Node>>(Collections.reverseOrder()); ;
+  private TreeMap<Integer, ArrayList<Node>> routingTable =
+      new TreeMap<Integer, ArrayList<Node>>(Collections.reverseOrder());
+  ;
 
-    private QueryDispatcher queryDispatcher;
-    private ResponseHandler responseHandler;
+  private QueryDispatcher queryDispatcher;
+  private ResponseHandler responseHandler;
 
-    private CommandBuilder cb;
+  private CommandBuilder cb;
 
-    private Node node; // ?????????????????????????????????????????????????????????????????????????????????
-    final String USERNAME = "USERNAME"; //////////////////////////
-    /**
-     * Representation of nodes view of the network. Concrete implementations must connect with the bootstrap server and
-     * set the neighbours. If the boostrap server refused connection constructor must disconnect and reconnect with the
-     * boostrap server
-     *
-     * @param fileTransferService
-     * @param boostrapServer
-     * @throws NodeNotFoundException If unable to connect with the boostrap server
-     */
-    public Network(AbstractFileTransferService fileTransferService, Node boostrapServer) throws NodeNotFoundException {
-        this.fileTransferService = fileTransferService;
-        this.boostrapServer = boostrapServer;
-        this.cb = fileTransferService.getCommandBuilder();
+  private Node
+      node; // ?????????????????????????????????????????????????????????????????????????????????
+  final String USERNAME = "USERNAME"; // ////////////////////////
+  /**
+   * Representation of nodes view of the network. Concrete implementations must connect with the
+   * bootstrap server and set the neighbours. If the boostrap server refused connection constructor
+   * must disconnect and reconnect with the boostrap server
+   *
+   * @param fileTransferService
+   * @param boostrapServer
+   * @throws NodeNotFoundException If unable to connect with the boostrap server
+   */
+  public Network(AbstractFileTransferService fileTransferService, Node boostrapServer)
+      throws NodeNotFoundException {
+    this.fileTransferService = fileTransferService;
+    this.boostrapServer = boostrapServer;
+    this.cb = fileTransferService.getCommandBuilder();
 
-        // register with the BS
-        QueryResult response = null;
+    // register with the BS
+    QueryResult response = null;
+    try {
+      queryDispatcher = new QueryDispatcher(fileTransferService);
+      while (true) {
         try {
-            queryDispatcher = new QueryDispatcher(fileTransferService);
-            while (true) {
-                try {
-                    Query query = Query.createQuery(cb.getRegisterCommand(USERNAME), boostrapServer);
-                    response = queryDispatcher.dispatchOne(query).get();
-                    if (response.state == 0) {
-                        break;
-                    }
-                } catch (ExecutionException | InterruptedException e) {
-                    // e.printStackTrace();
-                    System.out.println("Error occured");
-                }
-            }
-        } catch (SocketException e) {
-            System.out.println(e);
+          Query query = Query.createQuery(cb.getRegisterCommand(USERNAME), boostrapServer);
+          response = queryDispatcher.dispatchOne(query).get();
+          if (response.state == 0) {
+            break;
+          }
+        } catch (ExecutionException | InterruptedException e) {
+          // e.printStackTrace();
+          System.out.println("Error occured");
+        }
+      }
+    } catch (SocketException e) {
+      System.out.println(e);
+    }
+
+    assert response != null;
+    addInitialNeighbours(response);
+  }
+
+  /**
+   * Get the neighbours of this node.
+   *
+   * @return iterator of neighbours. Ordering depends on the implementation
+   */
+  Iterator<Node> getNeighbours() {
+    // have to change the method params returned
+    ArrayList<Node> list = new ArrayList<Node>();
+
+    for (Map.Entry<Integer, ArrayList<Node>> entityArry : routingTable.entrySet()) {
+      list.addAll(entityArry.getValue());
+    }
+
+    return list.iterator();
+  }
+
+  /**
+   * Used to reset the network state by disconnecting with boostrap server and reconnecting
+   *
+   * @throws NodeNotFoundException if unable to connect to the boostrap server
+   */
+  void resetNetwork() throws NodeNotFoundException {
+    routingTable.clear();
+    return;
+  }
+
+  /**
+   * Used to add new neighbours to the network
+   *
+   * @param node new neighbour
+   */
+  void addNeighbour(Node node) {
+    // if the neighbour is found through a search ??????????????????
+    // check if the node is already in the routing table
+    for (Map.Entry<Integer, ArrayList<Node>> entityArry : routingTable.entrySet()) {
+      for (Node entity : entityArry.getValue()) {
+        if (node.getPort() == entity.getPort() && node.getIpAddress() == entity.getIpAddress()) {
+          // remove the node from current file count list and add
+          if (routingTable.containsKey(entityArry.getKey() + 1)) {
+            routingTable.get(entityArry.getKey() + 1).add(entity);
+          } else {
+            // if key file count doesn't exist
+            ArrayList<Node> temp = new ArrayList<Node>();
+            temp.add(entity);
+            routingTable.put(entityArry.getKey() + 1, temp);
+          }
+          // remove
+          entityArry.getValue().remove(entity);
+        }
+      }
+    }
+  }
+
+  private void addInitialNeighbours(QueryResult response) {
+    // add the neighbour nodes returned by BS to the routing table
+    if (response.body != null) {
+      responseHandler = new ResponseHandler();
+      HashMap<String, String> formattedResponse =
+          responseHandler.handleRegisterResponse(response.body);
+
+      String state = formattedResponse.get("no_nodes");
+      if (state.equals("0") || state.equals("1") || state.equals("2")) {
+        this.routingTable = new TreeMap<>();
+        routingTable.put(0, new ArrayList<>());
+        try {
+          if (formattedResponse.get("IP_1") != null) {
+            Node node =
+                new Node(
+                    InetAddress.getByName(formattedResponse.get("IP_1")),
+                    Integer.parseInt(formattedResponse.get("port_1")));
+            routingTable.get(0).add(node);
+            sendJoinRequest(node);
+          }
+          if (formattedResponse.get("IP_2") != null) {
+            Node node =
+                new Node(
+                    InetAddress.getByName(formattedResponse.get("IP_1")),
+                    Integer.parseInt(formattedResponse.get("port_2")));
+            addNeighbour(node);
+            routingTable.get(0).add(node);
+            sendJoinRequest(node);
+          }
+
+        } catch (UnknownHostException e) {
+          System.out.println("IP error");
         }
 
-        assert response != null;
-        addInitialNeighbours(response);
+      } else if (state.equals("9999")) {
+        System.out.println("Error in command");
+      } else if (state.equals("9998")) {
+        System.out.println("failed, already registered to you, unregister first");
+        // unregister from BS: implement method ?????????????????????????????????????????
+      } else if (state.equals("9997")) {
+        System.out.println("failed, registered to another user, try a different IP and port");
+      } else if (state.equals("9996")) {
+        System.out.println("failed, can’t register. BS full");
+      }
     }
+  }
 
-    /**
-     * Get the neighbours of this node.
-     *
-     * @return iterator of neighbours. Ordering depends on the implementation
-     */
-    Iterator<Node> getNeighbours() {
-        // have to change the method params returned
-        ArrayList<Node> list  = new ArrayList<Node>();
-
-        for(Map.Entry<Integer,ArrayList<Node>> entityArry : routingTable.entrySet()) {
-            list.addAll(entityArry.getValue());
-        }
-
-        return list.iterator();
-    }
-
-    /**
-     * Used to reset the network state by disconnecting with boostrap server and reconnecting
-     *
-     * @throws NodeNotFoundException if unable to connect to the boostrap server
-     */
-    void resetNetwork() throws NodeNotFoundException {
-        routingTable.clear();
-        return;
-    }
-
-    /**
-     * Used to add new neighbours to the network
-     *
-     * @param node new neighbour
-     */
-    void addNeighbour(Node node) {
-        // if the neighbour is found through a search ??????????????????
-        // check if the node is already in the routing table
-        for(Map.Entry<Integer,ArrayList<Node>> entityArry : routingTable.entrySet()) {
-            for(Node entity: entityArry.getValue()) {
-                if(node.getPort()==entity.getPort() && node.getIpAddress()==entity.getIpAddress()) {
-                    // remove the node from current file count list and add
-                    if(routingTable.containsKey(entityArry.getKey()+1)) {
-                        routingTable.get(entityArry.getKey()+1).add(entity);
-                    }
-                    else {
-                        // if key file count doesn't exist
-                        ArrayList<Node> temp = new ArrayList<Node>();
-                        temp.add(entity);
-                        routingTable.put(entityArry.getKey() + 1, temp);
-                    }
-                    // remove
-                    entityArry.getValue().remove(entity);
-                }
-            }
-        }
-    }
-
-    private void addInitialNeighbours(QueryResult response) {
-        // add the neighbour nodes returned by BS to the routing table
-        if(response.body != null) {
-            responseHandler = new ResponseHandler();
-            HashMap<String,String> formattedResponse = responseHandler.handleRegisterResponse(response.body);
-
-            String state = formattedResponse.get("no_nodes");
-            if (state.equals("0")||state.equals("1") || state.equals("2")) {
-                this.routingTable = new TreeMap<>();
-                routingTable.put(0, new ArrayList<>());
-                try {
-                    if (formattedResponse.get("IP_1") != null) {
-                        Node node = new Node(InetAddress.getByName(formattedResponse.get("IP_1")),
-                                Integer.parseInt(formattedResponse.get("port_1")));
-                        routingTable.get(0).add(node);
-                        sendJoinRequest(node);
-                    }
-                    if (formattedResponse.get("IP_2") != null) {
-                        Node node = new Node(InetAddress.getByName(formattedResponse.get("IP_1")),
-                                Integer.parseInt(formattedResponse.get("port_2")));
-                        addNeighbour(node);
-                        routingTable.get(0).add(node);
-                        sendJoinRequest(node);
-                    }
-
-                } catch (UnknownHostException e) {
-                    System.out.println("IP error");
-                }
-
-            } else if (state.equals("9999")) {
-                System.out.println("Error in command");
-            } else if (state.equals("9998")) {
-                System.out.println("failed, already registered to you, unregister first");
-                // unregister from BS: implement method ?????????????????????????????????????????
-            } else if (state.equals("9997")) {
-                System.out.println("failed, registered to another user, try a different IP and port");
-            } else if (state.equals("9996")) {
-                System.out.println("failed, can’t register. BS full");
-            }
-        }
-    }
-
-    private void sendJoinRequest(Node node){
-        Query query = Query.createQuery(cb.getJoinCommand(), node);
-        queryDispatcher.dispatchOne(query);
-    }
+  private void sendJoinRequest(Node node) {
+    Query query = Query.createQuery(cb.getJoinCommand(), node);
+    queryDispatcher.dispatchOne(query);
+  }
 }
-
-

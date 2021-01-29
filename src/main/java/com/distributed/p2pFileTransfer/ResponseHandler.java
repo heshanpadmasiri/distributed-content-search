@@ -11,15 +11,15 @@ public class ResponseHandler {
 
         HashMap<String,String> response = new HashMap<>();
         response.put("no_nodes",no_nodes);
-        if(no_nodes=="0") {
+        if(no_nodes.equals("0")) {
             System.out.println("request is successful, no nodes in the system");
         }
-        else if(no_nodes=="1") {
+        else if(no_nodes.equals("1")) {
             //System.out.println("request is successful,1 node in the system");
             response.put("IP_1",params[3]);
             response.put("port_1",params[4]);
         }
-        else if(no_nodes=="2") {
+        else if(no_nodes.equals("2")) {
             response.put("IP_1",params[3]);
             response.put("port_1",params[4]);
             response.put("IP_2",params[5]);
