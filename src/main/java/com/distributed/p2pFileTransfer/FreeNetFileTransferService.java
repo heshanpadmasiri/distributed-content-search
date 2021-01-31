@@ -22,7 +22,7 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
               configuration.getProperty("cache_dir"),
               configuration.getProperty("local_dir"),
               Integer.parseInt(configuration.getProperty("cache_size")),
-                  configuration.getProperty("server_port"));
+                  configuration.getProperty("port"));
       Node bootstrapServer = new Node(InetAddress.getByName(configuration.getProperty("boostrap_server_ip")), Integer.parseInt(configuration.getProperty("boostrap_server_port")));
       instance =
           new FreeNetFileTransferService(
