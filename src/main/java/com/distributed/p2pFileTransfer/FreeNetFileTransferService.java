@@ -14,19 +14,21 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
   private static FreeNetFileTransferService instance;
   private ExecutorService executorService;
 
-  public static synchronized FreeNetFileTransferService getInstance(Properties configuration)
+  public static synchronized FreeNetFileTransferService getInstance(Properties config)
           throws SocketException, UnknownHostException, NodeNotFoundException {
     if (instance == null) {
+        Configuration.setConfiguration(config);
       FileHandler fileHandler =
-          new FileHandler(
-              configuration.getProperty("cache_dir"),
-              configuration.getProperty("local_dir"),
-              Integer.parseInt(configuration.getProperty("cache_size")),
-                  configuration.getProperty("port"));
-      Node bootstrapServer = new Node(InetAddress.getByName(configuration.getProperty("boostrap_server_ip")), Integer.parseInt(configuration.getProperty("boostrap_server_port")));
-      instance =
+              new FileHandler(
+                      Configuration.getCacheDir(),
+                      Configuration.getLocalDir(),
+                      Configuration.getCacheSize(),
+                      Configuration.getPort());
+      Node bootstrapServer = new Node(InetAddress.getByName(Configuration.getBootstrapServerIp()), Integer.parseInt(Configuration.getBootstrapServerport()));
+
+        instance =
           new FreeNetFileTransferService(
-              fileHandler, Integer.parseInt(configuration.getProperty("port")), bootstrapServer);
+              fileHandler, Integer.parseInt(Configuration.getPort()), bootstrapServer);
     }
     return instance;
   }
@@ -51,12 +53,10 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
                       each -> {
                         try {
                           return each.get();
-                        } catch (InterruptedException e) {
-                          e.printStackTrace();
-                        } catch (ExecutionException e) {
+                        } catch (InterruptedException | ExecutionException e) {
                           e.printStackTrace();
                         }
-                        return null;
+                          return null;
                       })
                   .collect(Collectors.toList());
           Set<String> files = new TreeSet<>();
