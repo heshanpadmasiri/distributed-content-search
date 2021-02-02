@@ -121,7 +121,7 @@ class QueryListener implements Runnable {
                   .skip(6)
                   .forEach(
                       fileName -> {
-                        fileHandler.downloadFileToCache(source, fileName);
+                        fileHandler.downloadFileToCache(source, fileName.replaceAll("_", " "));
                       });
             } catch (UnknownHostException e) {
               logger.log(
