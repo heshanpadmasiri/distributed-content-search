@@ -3,8 +3,10 @@ package com.distributed.p2pFileTransfer;
 import java.io.IOException;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -96,7 +98,8 @@ class QueryListener implements Runnable {
 
     @Override
     public void run() {
-      String queryType = message.split(" ")[1];
+      String[] data = message.split(" ");
+      String queryType = data[1];
       switch (queryType) {
         case "SEROK":
           pendingExecutors
@@ -105,7 +108,6 @@ class QueryListener implements Runnable {
                   (executor) -> {
                     executor.notify(message);
                   });
-          String[] data = message.split(" ");
           int numberOfFiles = Integer.parseInt(data[2]);
           if (numberOfFiles > 0) {
             try {
@@ -135,9 +137,49 @@ class QueryListener implements Runnable {
                     executor.notify(message);
                   });
           break;
+        case "SER":
+          String fileName = data[4].replaceAll("\"","");
+          UUID uuid = UUID.fromString(data[5]);
+          FileSearchRunner fileSearchRunner = new FileSearchRunner(fileName, origin, uuid);
+          executorService.execute(fileSearchRunner);
         default:
           throw new IllegalStateException("Unexpected value: " + queryType);
       }
     }
   }
+
+  private class FileSearchRunner implements Runnable {
+    String searchQuery;
+    Node sender;
+    UUID queryId;
+
+    public FileSearchRunner(String searchQuery, Node sender, UUID queryId) {
+      this.searchQuery = searchQuery;
+      this.sender = sender;
+      this.queryId = queryId;
+    }
+
+    @Override
+    public void run() {
+      FileHandler fileHandler = fileTransferService.getFileHandler();
+      List<String> files = fileHandler.searchForFile(searchQuery);
+      Query responseQuery = null;
+      if (files.size() > 0) {
+        String body = fileTransferService.getCommandBuilder().getSearchOkCommand(files, queryId);
+        responseQuery = Query.createQuery(body, sender);
+      } else {
+
+      }
+      try {
+        QueryResult result = fileTransferService.getQueryDispatcher().dispatchOne(responseQuery).get();
+        logger.log(Level.INFO, String.format("response %s send to message id %s", responseQuery.body, queryId.toString()));
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      } catch (ExecutionException e) {
+        e.printStackTrace();
+      }
+
+    }
+  }
 }
+
