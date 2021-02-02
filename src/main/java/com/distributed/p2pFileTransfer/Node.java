@@ -5,7 +5,7 @@ import java.util.Objects;
 
 public class Node {
 
-    private final InetAddress ipAddress;
+    private InetAddress ipAddress = null;
     private final int port;
     private final InetSocketAddress socketAddress;
 
@@ -16,7 +16,15 @@ public class Node {
      * @param port      port of the node
      */
     public Node(InetAddress ipAddress, int port) {
-        this.ipAddress = ipAddress;
+        try {
+            if (ipAddress != null && ipAddress.equals(InetAddress.getByName("127.0.1.1"))){
+                this.ipAddress = InetAddress.getByName("127.0.0.1");
+            } else {
+                this.ipAddress = ipAddress;
+            }
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
         this.port = port;
         socketAddress = new InetSocketAddress(this.ipAddress, port);
     }
@@ -48,5 +56,13 @@ public class Node {
     @Override
     public int hashCode() {
         return Objects.hash(ipAddress, port);
+    }
+
+    @Override
+    public String toString() {
+        return "Node{" +
+                "ipAddress=" + ipAddress +
+                ", port=" + port +
+                '}';
     }
 }
