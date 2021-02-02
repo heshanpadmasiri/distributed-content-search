@@ -146,6 +146,14 @@ class QueryListener implements Runnable {
           UUID uuid = UUID.fromString(data[5]);
           FileSearchRunner fileSearchRunner = new FileSearchRunner(fileName, origin, uuid);
           executorService.execute(fileSearchRunner);
+        case "JOIN":
+          try {
+            Node node = new Node(InetAddress.getByName(data[2]), Integer.parseInt(data[3]));
+            JoinRunner joinRunner = new JoinRunner(node);
+            executorService.execute(joinRunner);
+          } catch (UnknownHostException e) {
+            e.printStackTrace();
+          }
         default:
           throw new IllegalStateException("Unexpected value: " + queryType);
       }
@@ -181,6 +189,31 @@ class QueryListener implements Runnable {
             Level.INFO,
             String.format(
                 "response %s send to message id %s", responseQuery.body, queryId.toString()));
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      } catch (ExecutionException e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
+  private class JoinRunner implements Runnable{
+      Node other;
+
+    public JoinRunner(Node other) {
+      this.other = other;
+    }
+
+    @Override
+    public void run() {
+      fileTransferService.getNetwork().addNeighbour(other);
+      Query joinOk = Query.createQuery(fileTransferService.getCommandBuilder().getJoinOkCommand(), other);
+      try {
+        fileTransferService.getQueryDispatcher().dispatchOne(joinOk).get();
+        logger.log(
+                Level.INFO,
+                String.format(
+                        "join ok to node %s", other.toString()));
       } catch (InterruptedException e) {
         e.printStackTrace();
       } catch (ExecutionException e) {
