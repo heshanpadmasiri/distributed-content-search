@@ -16,7 +16,7 @@ class QueryListener implements Runnable {
   private ExecutorService executorService;
   private DatagramSocket socket;
   private boolean terminate = false;
-  private HashMap<Node, List<Executor>> pendingExecutors;
+  private final HashMap<Node, List<Executor>> pendingExecutors;
   private Logger logger;
 
   public QueryListener(AbstractFileTransferService fileTransferService, int port)
@@ -64,10 +64,12 @@ class QueryListener implements Runnable {
    * @param executor who is expecting the message
    */
   public void registerForResponse(Node node, Executor executor) {
-    if (pendingExecutors.containsKey(node)) {
-      pendingExecutors.get(node).add(executor);
-    } else {
-      pendingExecutors.put(node, new LinkedList<>(Collections.singletonList(executor)));
+    synchronized (pendingExecutors) {
+      if (pendingExecutors.containsKey(node)) {
+        pendingExecutors.get(node).add(executor);
+      } else {
+        pendingExecutors.put(node, new LinkedList<>(Collections.singletonList(executor)));
+      }
     }
   }
 
@@ -78,7 +80,9 @@ class QueryListener implements Runnable {
    * @param executor who wants to stop notifications
    */
   public void unRegisterForResponse(Node node, Executor executor) {
-    pendingExecutors.get(node).remove(executor);
+    synchronized (pendingExecutors) {
+      pendingExecutors.get(node).remove(executor);
+    }
   }
 
   public void stop() {
@@ -102,12 +106,12 @@ class QueryListener implements Runnable {
       String queryType = data[1];
       switch (queryType) {
         case "SEROK":
-          pendingExecutors
-              .get(origin)
-              .forEach(
-                  (executor) -> {
-                    executor.notify(message);
-                  });
+          synchronized (pendingExecutors) {
+            List<Executor> executors = new LinkedList<>(pendingExecutors.get(origin));
+            for (Executor executor : executors) {
+              executor.notify(message);
+            }
+          }
           int numberOfFiles = Integer.parseInt(data[2]);
           if (numberOfFiles > 0) {
             try {
@@ -130,15 +134,15 @@ class QueryListener implements Runnable {
         case "REGOK":
         case "JOINOK":
         case "LEAVEOK":
-          pendingExecutors
-              .get(origin)
-              .forEach(
-                  (executor) -> {
-                    executor.notify(message);
-                  });
+          synchronized (pendingExecutors) {
+            List<Executor> executors = new LinkedList<>(pendingExecutors.get(origin));
+            for (Executor executor : executors) {
+              executor.notify(message);
+            }
+          }
           break;
         case "SER":
-          String fileName = data[4].replaceAll("\"","");
+          String fileName = data[4].replaceAll("\"", "");
           UUID uuid = UUID.fromString(data[5]);
           FileSearchRunner fileSearchRunner = new FileSearchRunner(fileName, origin, uuid);
           executorService.execute(fileSearchRunner);
@@ -171,15 +175,17 @@ class QueryListener implements Runnable {
 
       }
       try {
-        QueryResult result = fileTransferService.getQueryDispatcher().dispatchOne(responseQuery).get();
-        logger.log(Level.INFO, String.format("response %s send to message id %s", responseQuery.body, queryId.toString()));
+        QueryResult result =
+            fileTransferService.getQueryDispatcher().dispatchOne(responseQuery).get();
+        logger.log(
+            Level.INFO,
+            String.format(
+                "response %s send to message id %s", responseQuery.body, queryId.toString()));
       } catch (InterruptedException e) {
         e.printStackTrace();
       } catch (ExecutionException e) {
         e.printStackTrace();
       }
-
     }
   }
 }
-
