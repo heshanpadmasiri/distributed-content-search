@@ -57,8 +57,8 @@ class QueryListenerTest {
         DatagramPacket datagramPacket = new DatagramPacket(data, data.length, receiver.getSocketAddress());
         sender.send(datagramPacket);
         verify(executor, timeout(5000).atLeastOnce()).notify(message);
-        verify(fileHandler).downloadFileToCache(senderNode,"baby_go_home.mp3");
-        verify(fileHandler).downloadFileToCache(senderNode,"baby_come_back.mp3");
+        verify(fileHandler).downloadFileToCache(senderNode,"baby go home.mp3");
+        verify(fileHandler).downloadFileToCache(senderNode,"baby come back.mp3");
         verify(fileHandler).downloadFileToCache(senderNode,"baby.mpeg");
     }
 }
