@@ -17,7 +17,7 @@ public class Node {
      */
     public Node(InetAddress ipAddress, int port) {
         try {
-            if (ipAddress.equals(InetAddress.getByName("127.0.1.1"))){
+            if (ipAddress != null && ipAddress.equals(InetAddress.getByName("127.0.1.1"))){
                 this.ipAddress = InetAddress.getByName("127.0.0.1");
             } else {
                 this.ipAddress = ipAddress;
