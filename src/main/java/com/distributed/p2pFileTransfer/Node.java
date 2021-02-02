@@ -57,4 +57,12 @@ public class Node {
     public int hashCode() {
         return Objects.hash(ipAddress, port);
     }
+
+    @Override
+    public String toString() {
+        return "Node{" +
+                "ipAddress=" + ipAddress +
+                ", port=" + port +
+                '}';
+    }
 }
