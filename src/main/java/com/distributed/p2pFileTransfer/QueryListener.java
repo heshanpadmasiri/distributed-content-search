@@ -176,12 +176,15 @@ class QueryListener implements Runnable {
       FileHandler fileHandler = fileTransferService.getFileHandler();
       List<String> files = fileHandler.searchForFile(searchQuery);
       Query responseQuery = null;
-      if (files.size() > 0) {
-        String body = fileTransferService.getCommandBuilder().getSearchOkCommand(files, queryId);
-        responseQuery = Query.createQuery(body, sender);
-      } else {
-
+      if (files.size() == 0) {
+        try {
+          files = fileTransferService.searchForFile(searchQuery).get();
+        } catch (InterruptedException | ExecutionException e) {
+          e.printStackTrace();
+        }
       }
+      String body = fileTransferService.getCommandBuilder().getSearchOkCommand(files, queryId);
+      responseQuery = Query.createQuery(body, sender);
       try {
         QueryResult result =
             fileTransferService.getQueryDispatcher().dispatchOne(responseQuery).get();
@@ -189,9 +192,7 @@ class QueryListener implements Runnable {
             Level.INFO,
             String.format(
                 "response %s send to message id %s", responseQuery.body, queryId.toString()));
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      } catch (ExecutionException e) {
+      } catch (InterruptedException | ExecutionException e) {
         e.printStackTrace();
       }
     }
