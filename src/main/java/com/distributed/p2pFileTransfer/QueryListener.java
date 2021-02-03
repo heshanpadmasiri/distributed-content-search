@@ -106,28 +106,33 @@ class QueryListener implements Runnable {
       String queryType = data[1];
       switch (queryType) {
         case "SEROK":
-          synchronized (pendingExecutors) {
-            List<Executor> executors = new LinkedList<>(pendingExecutors.get(origin));
-            for (Executor executor : executors) {
-              executor.notify(message);
-            }
-          }
           int numberOfFiles = Integer.parseInt(data[2]);
           if (numberOfFiles > 0) {
             try {
               Node source = new Node(InetAddress.getByName(data[3]), Integer.parseInt(data[4]));
-              // todo: check if the file names are correct
               Stream.of(data)
                   .skip(6)
                   .forEach(
                       fileName -> {
-                        fileHandler.downloadFileToCache(source, fileName.replaceAll("_", " "));
+                        try {
+                          fileHandler
+                              .downloadFileToCache(source, fileName.replaceAll("_", " "))
+                              .get();
+                        } catch (InterruptedException | ExecutionException e) {
+                          e.printStackTrace();
+                        }
                       });
             } catch (UnknownHostException e) {
               logger.log(
                   Level.WARNING,
                   String.format(
                       "Failed to get Inet address ipAddress: %s port: %s", data[3], data[4]));
+            }
+          }
+          synchronized (pendingExecutors) {
+            List<Executor> executors = new LinkedList<>(pendingExecutors.get(origin));
+            for (Executor executor : executors) {
+              executor.notify(message);
             }
           }
           break;
@@ -198,8 +203,8 @@ class QueryListener implements Runnable {
     }
   }
 
-  private class JoinRunner implements Runnable{
-      Node other;
+  private class JoinRunner implements Runnable {
+    Node other;
 
     public JoinRunner(Node other) {
       this.other = other;
@@ -208,13 +213,11 @@ class QueryListener implements Runnable {
     @Override
     public void run() {
       fileTransferService.getNetwork().addNeighbour(other);
-      Query joinOk = Query.createQuery(fileTransferService.getCommandBuilder().getJoinOkCommand(), other);
+      Query joinOk =
+          Query.createQuery(fileTransferService.getCommandBuilder().getJoinOkCommand(), other);
       try {
         fileTransferService.getQueryDispatcher().dispatchOne(joinOk).get();
-        logger.log(
-                Level.INFO,
-                String.format(
-                        "join ok to node %s", other.toString()));
+        logger.log(Level.INFO, String.format("join ok to node %s", other.toString()));
       } catch (InterruptedException e) {
         e.printStackTrace();
       } catch (ExecutionException e) {
