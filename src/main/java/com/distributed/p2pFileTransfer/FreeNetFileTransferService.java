@@ -1,5 +1,7 @@
 package com.distributed.p2pFileTransfer;
 
+import jdk.nashorn.internal.codegen.CompilerConstants;
+
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -8,6 +10,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class FreeNetFileTransferService extends AbstractFileTransferService {
 
@@ -92,12 +95,44 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
 
   @Override
   public void downloadFile(String fileName)
-      throws FileNotFoundException, DestinationAlreadyExistsException {}
+      throws FileNotFoundException, DestinationAlreadyExistsException {
+      String queryBody = getCommandBuilder().getSearchCommand(fileName);
+      Callable<QueryResult> fileFinder = () -> {
+          List<Node> neighbours = new LinkedList<>();
+          this.getNetwork().getNeighbours().forEachRemaining(neighbours::add);
+          List<Query> queries = Query.createQuery(queryBody, neighbours);
+          for (Query query : queries) {
+              try{
+                  QueryResult result = this.getQueryDispatcher().dispatchOne(query).get(20,TimeUnit.SECONDS);
+                  String[] data = result.getBody().split(" ");
+                  int numberOfFiles = Integer.parseInt(data[2]);
+                  if(numberOfFiles > 0){
+                      for (int i=0; i<numberOfFiles; i++){
+                          String name = data[6+i].replaceAll("_", " ");
+                          if (name.equals(fileName)){
+                              return result;
+                          }
+                      }
+                  }
+              }catch (TimeoutException ignored){
+              }
+          }
+          throw new FileNotFoundException();
+      };
+      try {
+          QueryResult result = executorService.submit(fileFinder).get();
+          String[] data = result.getBody().split(" ");
+          Node source = new Node(InetAddress.getByName(data[3]), Integer.parseInt(data[4]));
+          getFileHandler().downloadFileToLocal(source, fileName);
+      } catch (InterruptedException | ExecutionException | UnknownHostException e) {
+          e.printStackTrace();
+      }
+  }
 
   @Override
-  public void downloadFileFrom(String fileName,Node source)
+  public void downloadFileFrom(String fileName, Node source)
       throws FileNotFoundException, DestinationAlreadyExistsException, NodeNotFoundException {
-      getFileHandler().downloadFileToLocal(source,fileName);
+    getFileHandler().downloadFileToLocal(source, fileName);
   }
 
   @Override
