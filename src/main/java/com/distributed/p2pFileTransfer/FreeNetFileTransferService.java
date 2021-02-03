@@ -15,18 +15,21 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
   private ExecutorService executorService;
 
   public static synchronized FreeNetFileTransferService getInstance(Properties config)
-          throws SocketException, UnknownHostException, NodeNotFoundException {
+      throws SocketException, UnknownHostException, NodeNotFoundException {
     if (instance == null) {
-        Configuration.setConfiguration(config);
+      Configuration.setConfiguration(config);
       FileHandler fileHandler =
-              new FileHandler(
-                      Configuration.getCacheDir(),
-                      Configuration.getLocalDir(),
-                      Configuration.getCacheSize(),
-                      Configuration.getPort());
-      Node bootstrapServer = new Node(InetAddress.getByName(Configuration.getBootstrapServerIp()), Integer.parseInt(Configuration.getBootstrapServerport()));
+          new FileHandler(
+              Configuration.getCacheDir(),
+              Configuration.getLocalDir(),
+              Configuration.getCacheSize(),
+              Configuration.getPort());
+      Node bootstrapServer =
+          new Node(
+              InetAddress.getByName(Configuration.getBootstrapServerIp()),
+              Integer.parseInt(Configuration.getBootstrapServerport()));
 
-        instance =
+      instance =
           new FreeNetFileTransferService(
               fileHandler, Integer.parseInt(Configuration.getPort()), bootstrapServer);
     }
@@ -34,7 +37,7 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
   }
 
   private FreeNetFileTransferService(FileHandler fileHandler, int port, Node boostrapServer)
-          throws SocketException, UnknownHostException, NodeNotFoundException {
+      throws SocketException, UnknownHostException, NodeNotFoundException {
     super(fileHandler, port, boostrapServer);
     this.executorService = Executors.newCachedThreadPool();
   }
@@ -43,22 +46,8 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
   public Future<List<String>> searchForFile(String query) {
     Callable<List<String>> searchExecutor =
         () -> {
-          List<Node> neighbours = new LinkedList<>();
-          this.getNetwork().getNeighbours().forEachRemaining(neighbours::add);
-          List<Query> queries =
-              Query.createQuery(this.getCommandBuilder().getSearchCommand(query), neighbours);
-          List<QueryResult> results =
-              this.getQueryDispatcher().dispatchAll(queries).stream()
-                  .map(
-                      each -> {
-                        try {
-                          return each.get();
-                        } catch (InterruptedException | ExecutionException e) {
-                          e.printStackTrace();
-                        }
-                          return null;
-                      })
-                  .collect(Collectors.toList());
+          String queryBody = getCommandBuilder().getSearchCommand(query);
+          List<QueryResult> results = floodNetwork(queryBody).get();
           Set<String> files = new TreeSet<>();
           results.forEach(
               result -> {
@@ -78,6 +67,30 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
   }
 
   @Override
+  protected Future<List<QueryResult>> floodNetwork(String queryBody) {
+    Callable<List<QueryResult>> floodExecutor =
+        () -> {
+          List<Node> neighbours = new LinkedList<>();
+          this.getNetwork().getNeighbours().forEachRemaining(neighbours::add);
+          List<Query> queries = Query.createQuery(queryBody, neighbours);
+          List<QueryResult> results =
+              this.getQueryDispatcher().dispatchAll(queries).stream()
+                  .map(
+                      each -> {
+                        try {
+                          return each.get();
+                        } catch (InterruptedException | ExecutionException e) {
+                          e.printStackTrace();
+                        }
+                        return null;
+                      })
+                  .collect(Collectors.toList());
+          return results;
+        };
+    return executorService.submit(floodExecutor);
+  }
+
+  @Override
   public void downloadFile(String fileName, Path destination)
       throws FileNotFoundException, DestinationAlreadyExistsException {}
 
@@ -85,8 +98,8 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
   public void downloadFileFrom(String fileName, Path destination, Node source)
       throws FileNotFoundException, DestinationAlreadyExistsException, NodeNotFoundException {}
 
-    @Override
-    void stop() {
-        super.stop();
-    }
+  @Override
+  void stop() {
+    super.stop();
+  }
 }
