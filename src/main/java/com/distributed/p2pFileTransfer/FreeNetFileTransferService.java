@@ -46,22 +46,8 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
   public Future<List<String>> searchForFile(String query) {
     Callable<List<String>> searchExecutor =
         () -> {
-          List<Node> neighbours = new LinkedList<>();
-          this.getNetwork().getNeighbours().forEachRemaining(neighbours::add);
-          List<Query> queries =
-              Query.createQuery(this.getCommandBuilder().getSearchCommand(query), neighbours);
-          List<QueryResult> results =
-              this.getQueryDispatcher().dispatchAll(queries).stream()
-                  .map(
-                      each -> {
-                        try {
-                          return each.get();
-                        } catch (InterruptedException | ExecutionException e) {
-                          e.printStackTrace();
-                        }
-                        return null;
-                      })
-                  .collect(Collectors.toList());
+          String queryBody = getCommandBuilder().getSearchCommand(query);
+          List<QueryResult> results = floodNetwork(queryBody).get();
           Set<String> files = new TreeSet<>();
           results.forEach(
               result -> {
@@ -78,6 +64,30 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
           return new ArrayList<>(files);
         };
     return executorService.submit(searchExecutor);
+  }
+
+  @Override
+  protected Future<List<QueryResult>> floodNetwork(String queryBody) {
+    Callable<List<QueryResult>> floodExecutor =
+        () -> {
+          List<Node> neighbours = new LinkedList<>();
+          this.getNetwork().getNeighbours().forEachRemaining(neighbours::add);
+          List<Query> queries = Query.createQuery(queryBody, neighbours);
+          List<QueryResult> results =
+              this.getQueryDispatcher().dispatchAll(queries).stream()
+                  .map(
+                      each -> {
+                        try {
+                          return each.get();
+                        } catch (InterruptedException | ExecutionException e) {
+                          e.printStackTrace();
+                        }
+                        return null;
+                      })
+                  .collect(Collectors.toList());
+          return results;
+        };
+    return executorService.submit(floodExecutor);
   }
 
   @Override
