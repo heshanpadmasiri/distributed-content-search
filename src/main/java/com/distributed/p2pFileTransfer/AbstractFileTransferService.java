@@ -36,6 +36,14 @@ public abstract class AbstractFileTransferService {
   public abstract Future<List<String>> searchForFile(String query);
 
   /**
+   * Use to flood the network with a query and get the response
+   * @param queryBody Body of the query
+   * @return results of flooding the network
+   */
+  protected abstract Future<List<QueryResult>> floodNetwork(String queryBody);
+
+
+  /**
    * Used to download a file. Will download the first file that exactly matches the file name.
    *
    * @param fileName Name of the file to download
