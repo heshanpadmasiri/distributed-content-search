@@ -118,6 +118,8 @@ class QueryListener implements Runnable {
                           fileHandler
                               .downloadFileToCache(source, fileName.replaceAll("_", " "))
                               .get();
+                        } catch (NullPointerException ignored) {
+
                         } catch (InterruptedException | ExecutionException e) {
                           e.printStackTrace();
                         }
