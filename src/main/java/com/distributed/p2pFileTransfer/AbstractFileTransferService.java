@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.concurrent.Future;
 
 public abstract class AbstractFileTransferService {
-  private Network network;
-  private FileHandler fileHandler;
-  private QueryDispatcher queryDispatcher;
-  private QueryListener queryListener;
-  private CommandBuilder commandBuilder;
+  private final Network network;
+  private final FileHandler fileHandler;
+  private final QueryDispatcher queryDispatcher;
+  private final QueryListener queryListener;
+  private final CommandBuilder commandBuilder;
   private Node currentNode;
   private Thread queryListenerThread;
 
