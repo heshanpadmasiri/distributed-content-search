@@ -64,12 +64,6 @@ class FreeNetFileTransferServiceTest {
     }
   }
 
-  @Test
-  void downloadExistingFileFile() {}
-
-  @Test
-  void downloadFileFrom() {}
-
   @BeforeEach
   void setUp() throws SocketException, UnknownHostException, NodeNotFoundException {
     Network networkMock = mock(Network.class);
