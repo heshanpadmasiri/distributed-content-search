@@ -36,22 +36,28 @@ public abstract class AbstractFileTransferService {
   public abstract Future<List<String>> searchForFile(String query);
 
   /**
+   * Use to flood the network with a query and get the response
+   * @param queryBody Body of the query
+   * @return results of flooding the network
+   */
+  protected abstract Future<List<QueryResult>> floodNetwork(String queryBody);
+
+
+  /**
    * Used to download a file. Will download the first file that exactly matches the file name.
    *
    * @param fileName Name of the file to download
-   * @param destination Path representing the destination file
    * @throws FileNotFoundException If no file is found that exactly matches the file name
    * @throws DestinationAlreadyExistsException If the destination file already exists. <b>This
    *     method will not overwrite existing files</b>
    */
-  public abstract void downloadFile(String fileName, Path destination)
+  public abstract void downloadFile(String fileName)
       throws FileNotFoundException, DestinationAlreadyExistsException;
 
   /**
    * Used to directly download a file without search for it in the network
    *
    * @param fileName Name of the file to download
-   * @param destination Path representing the destination file
    * @param source Node from which to download the file
    * @throws FileNotFoundException If no file is found that exactly matches the file name in the
    *     source
@@ -59,7 +65,7 @@ public abstract class AbstractFileTransferService {
    *     method will not overwrite existing files</b>
    * @throws NodeNotFoundException If source node refused to connect
    */
-  public abstract void downloadFileFrom(String fileName, Path destination, Node source)
+  public abstract void downloadFileFrom(String fileName, Node source)
       throws FileNotFoundException, DestinationAlreadyExistsException, NodeNotFoundException;
 
   Network getNetwork() {
