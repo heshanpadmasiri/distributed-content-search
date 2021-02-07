@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.List;
 
 class MainTests {
     
@@ -40,16 +39,6 @@ class MainTests {
         //fHandler.downloadFileToCache(source, "sites.csv");
         // Sleep is added to wait till the file download is completed before exiting
         Thread.sleep(2000);
-    }
-
-    /**
-     * Search for file in self storage
-     */
-    @Test
-    void testFileSearch() {
-        FileHandler fHandler = new FileHandler(clientCacheDir, clientLocalDir, cacheSize, clientPort);
-        List<String> matchingFiles = fHandler.searchForFile("s");
-        matchingFiles.forEach(System.out::println);
     }
 
     /**

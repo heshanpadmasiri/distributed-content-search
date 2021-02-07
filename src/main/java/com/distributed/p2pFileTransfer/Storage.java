@@ -3,30 +3,52 @@ package com.distributed.p2pFileTransfer;
 import org.apache.commons.io.FileUtils;
 import org.apache.tomcat.util.buf.HexUtils;
 
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Storage {
 
+    private final Logger logger;
+    private final String fileListName = "filelist.txt";
     private String cacheDir;
     private String localDir;
     private long fullCacheSize;
-    private final Logger logger;
 
     Storage(String cacheDir, String localDir, long fullCacheSize, String loggerName) {
         this.cacheDir = cacheDir;
         this.localDir = localDir;
         this.fullCacheSize = fullCacheSize;
         this.logger = Logger.getLogger(loggerName);
+    }
+
+    /**
+     * Convert file content to a byte array
+     *
+     * @param file File
+     * @return byte[]
+     */
+    private static byte[] readContentIntoByteArray(File file) {
+        FileInputStream fileInputStream;
+        byte[] bFile = new byte[(int) file.length()];
+        try {
+            //convert file into array of bytes
+            fileInputStream = new FileInputStream(file);
+            fileInputStream.read(bFile);
+            fileInputStream.close();
+            for (byte b : bFile) {
+                System.out.print((char) b);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return bFile;
     }
 
     /**
@@ -54,13 +76,15 @@ public class Storage {
         File oldestFile = null;
         if (dirFiles != null) {
             for (File f : dirFiles) {
-                if (f.lastModified() < oldestDate) {
-                    oldestDate = f.lastModified();
-                    oldestFile = f;
+                if (!f.getName().equals("filelist.txt")){
+                    if (f.lastModified() < oldestDate) {
+                        oldestDate = f.lastModified();
+                        oldestFile = f;
+                    }
                 }
             }
             if (oldestFile != null) {
-                this.logger.log(Level.INFO,String.format("Deleted file %s",oldestFile.getName()));
+                this.logger.log(Level.INFO, String.format("Deleted file %s", oldestFile.getName()));
                 oldestFile.delete();
             }
         }
@@ -73,16 +97,22 @@ public class Storage {
      * @param fileName  File to search
      * @return String file path if exists else null
      */
-    public String searchDirectory(String searchDir, String fileName) {
-        String[] searchDirListing = new File(searchDir).list();
-        if (searchDirListing != null) {
-            for (String filename : searchDirListing) {
-                if (filename.matches(fileName)) {
-                    return searchDir + "/" + fileName;
+    public Boolean searchDirectory(String searchDir, String fileName) {
+        String thisLine;
+        Boolean fileExists = false;
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(searchDir + "/" + fileListName));
+            while ((thisLine = br.readLine()) != null) {
+                if (thisLine.matches(fileName)) {
+                    fileExists = true;
+                    break;
                 }
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        return null;
+
+        return fileExists;
     }
 
     /**
@@ -91,13 +121,34 @@ public class Storage {
      * @param fileName Name of the file
      * @return String File Path
      */
-    public String getFilePath(String fileName) {
-        String filepath = searchDirectory(localDir, fileName);
-        if (filepath == null) {
-            filepath = searchDirectory(cacheDir, fileName);
+    public Boolean checkFileExists(String fileName) {
+        Boolean fileExists = searchDirectory(localDir, fileName);
+        if (fileExists == false) {
+            fileExists = searchDirectory(cacheDir, fileName);
         }
-        return filepath;
+        return fileExists;
+    }
 
+    /**
+     * Generate a 2-10MB file with random content
+     *
+     * @param fileName Name of the file to generate
+     * @return File Genearated file
+     */
+    public File generateRandomFile(String fileName) {
+        long upperbound = 10000000;
+        long lowerBound = 2000000;
+        long fileSize = ThreadLocalRandom.current().nextLong(lowerBound, upperbound + 1);
+        File file = new File(fileName);
+        try {
+            file.createNewFile();
+            RandomAccessFile raf = new RandomAccessFile(file, "rw");
+            raf.setLength(fileSize);
+            raf.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return file;
     }
 
     /**
@@ -108,69 +159,72 @@ public class Storage {
      */
     public List<String> searchForFile(String query) {
 
-        String[] cacheFileDir = new File(cacheDir).list();
-        String[] localFileDir = new File(localDir).list();
+
         List<String> matches = new ArrayList<>();
 
+        String thisLine;
         String regex = "(.*)" + query + "(.*)";
-        if (cacheFileDir != null) {
-            for (String filename : cacheFileDir) {
-                if (filename.matches(regex)) {
-                    matches.add(filename);
+        try {
+            BufferedReader cacheFileListingReader = new BufferedReader(new FileReader(cacheDir + "/" + fileListName));
+            BufferedReader localFileListingReader = new BufferedReader(new FileReader(localDir + "/" + fileListName));
+            while ((thisLine = cacheFileListingReader.readLine()) != null) {
+                if (thisLine.matches(regex)) {
+                    matches.add(thisLine);
                 }
             }
-        }
-        if (localFileDir != null) {
-            for (String filename : localFileDir) {
-                if (filename.matches(regex)) {
-                    matches.add(filename);
+
+            while ((thisLine = localFileListingReader.readLine()) != null) {
+                if (thisLine.matches(regex)) {
+                    matches.add(thisLine);
                 }
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         return matches;
     }
 
     /**
-     * Used to get a file from storage if it exists in local storage or cache storage
-     *
-     * @param fileName name of the file
-     * @return file
-     * @throws FileNotFoundException if no file matches the file name exactly
-     */
-    public File getFile(String fileName) throws FileNotFoundException {
-        String filePath = this.getFilePath(fileName);
-        File file = new File(filePath);
-        if (file.exists()) {
-            return file;
-        } else {
-            throw new FileNotFoundException();
-        }
-    }
-
-    /**
      * Used to get the hash of file from storage
      *
-     * @param fileName name of the file
+     * @param file
      * @return SHA-1 hash of the file
      * @throws FileNotFoundException if no file matches the file name exactly
      */
-    public String getFileHash(String fileName) throws FileNotFoundException {
-        String filePath = this.getFilePath(fileName);
-        File file = new File(filePath);
+    public String getFileHash(File file) throws FileNotFoundException {
         if (file.exists()) {
             try {
                 MessageDigest md = MessageDigest.getInstance("SHA-1");
-                md.update(Files.readAllBytes(Paths.get(filePath)));
+                md.update(readContentIntoByteArray(file));
                 byte[] hash = md.digest();
                 return HexUtils.toHexString(hash);
-            } catch (NoSuchAlgorithmException | IOException e) {
+            } catch (NoSuchAlgorithmException e) {
                 e.printStackTrace();
                 return null;
             }
         } else {
             throw new FileNotFoundException();
         }
+    }
 
+    /**
+     * Update the file listing in the directory
+     *
+     * @param dir      Directory path
+     * @param fileName Filename to update
+     * @throws IOException
+     */
+    public void updateDirectoryListing(String dir, String fileName) throws IOException {
+        File file = new File(dir + "/" + fileListName);
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+        BufferedWriter bw = new BufferedWriter(new FileWriter(file, true));
+        bw.write(fileName);
+        bw.newLine();
+        bw.flush();
+        bw.close();
+        logger.log(Level.INFO, String.format("Updated %s directory listing with %s", dir, fileName));
     }
 
 }

@@ -1,5 +1,6 @@
 package com.distributed.p2pFileTransfer;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,11 +11,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class FileDownloadCallable implements Callable<FileDownloadResult> {
+    private final Storage fileStorage;
+    private final Logger logger;
     private Node source;
     private String fileName;
     private String destination;
-    private final Storage fileStorage;
-    private final Logger logger;
 
     FileDownloadCallable(Node source, String filename, String destination, Storage fileStorage, String loggerName) {
         this.source = source;
@@ -72,13 +73,15 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
                 while ((bytesRead = inputStream.read(buffer)) != -1) {
                     outputStream.write(buffer, 0, bytesRead);
                 }
-                this.logger.log(Level.INFO,String.format("Downloaded %s",saveFilePath));
-                String hexHash = this.fileStorage.getFileHash(saveFilePath);
+                outputStream.close();
+                fileStorage.updateDirectoryListing(destination, fileName);
+                this.logger.log(Level.INFO, String.format("Downloaded %s", saveFilePath));
+                String hexHash = this.fileStorage.getFileHash(new File(saveFilePath));
                 if (hexHash.equals(fileHash)) {
-                    this.logger.log(Level.INFO,"File hashes match");
+                    this.logger.log(Level.INFO, "File hashes match");
                     return new FileDownloadResult("success", 0);
                 } else {
-                    this.logger.log(Level.INFO,"File hashes do not match");
+                    this.logger.log(Level.INFO, "File hashes do not match");
                     return new FileDownloadResult("Hash do not match", 1);
                 }
             } else {

@@ -3,6 +3,7 @@ package com.distributed.p2pFileTransfer;
 import com.google.gson.Gson;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,7 +15,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URLConnection;
 import java.util.List;
 
 @RestController
@@ -23,7 +23,7 @@ public class EndPointController {
     private Storage fileStorage;
 
     @PostConstruct
-    public void initialize(){
+    public void initialize() {
         fileStorage = new Storage(Configuration.getCacheDir(), Configuration.getLocalDir(), Configuration.getCacheSize(), this.getClass().getName());
     }
 
@@ -39,36 +39,29 @@ public class EndPointController {
     public ResponseEntity<Resource> downloadFile(HttpServletResponse res, @PathVariable("name") String fileName) throws IOException {
 
         System.out.println("Attempting to download " + fileName);
-        File file = fileStorage.getFile(fileName);
+        Boolean fileExists = fileStorage.checkFileExists(fileName);
 
-        String mimeType = URLConnection.guessContentTypeFromName(file.getName());
-        if (mimeType == null) {
-            //unknown mimetype so set the mimetype to application/octet-stream
-            mimeType = "application/octet-stream";
+        if (fileExists) {
+            String mimeType = "application/octet-stream";
+            res.setContentType(mimeType);
+            File file = fileStorage.generateRandomFile(fileName);
+            res.setHeader("Content-Disposition", "inline; filename=\"" + file.getName() + "\"");
+            res.setContentLength((int) file.length());
+
+            InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
+
+            String hexHash = fileStorage.getFileHash(file);
+            res.setHeader("Hash", hexHash);
+
+            System.out.println("Serving file from the server");
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
-        res.setContentType(mimeType);
-        res.setHeader("Content-Disposition", "inline; filename=\"" + file.getName() + "\"");
-        res.setContentLength((int) file.length());
-
-        InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
-
-        String hexHash = fileStorage.getFileHash(fileName);
-        res.setHeader("Hash", hexHash);
-
-        System.out.println("Serving file from the server");
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(resource);
-
     }
 
-    /**
-     * Search for the requested file in self storage
-     *
-     * @param res      Response
-     * @param fileName Name of the file
-     * @return ResponseEntity Filenames that inclue the search query
-     */
     @RequestMapping("/search/{name:.+}")
     public ResponseEntity<String> searchFile(HttpServletResponse res, @PathVariable("name") String fileName) {
         List<String> matchingNames = fileStorage.searchForFile(fileName);

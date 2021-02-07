@@ -34,21 +34,24 @@ public class Main {
         while (true){
             System.out.println("Enter command: ");
             String command = scanner.nextLine();
+            String fileName = "";
             switch (command){
                 case "exit":
                     System.out.println("Exiting....");
                     System.exit(0);
                 case "search":
                     System.out.println("Enter file name: ");
-                    String fileName = scanner.nextLine();
+                    fileName = scanner.nextLine();
                     Future<List<String>> queryResultFuture = client.searchForFile(fileName);
                     List<String> queryResult = queryResultFuture.get();
                     for(String name : queryResult) {
-                        System.out.println("-- " + file);
+                        System.out.println("-- " + name);
                     }
                     break;
-
-
+                case "download":
+                    System.out.println("Enter file name: ");
+                    fileName = scanner.nextLine();
+                    client.downloadFile(fileName);
             }
         }
 
