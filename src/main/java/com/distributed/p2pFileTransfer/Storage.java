@@ -139,9 +139,8 @@ public class Storage {
         long upperbound = 10000000;
         long lowerBound = 2000000;
         long fileSize = ThreadLocalRandom.current().nextLong(lowerBound, upperbound + 1);
-        File file = new File(fileName);
+        File file = new File("/tmp/"+fileName);
         try {
-            file.createNewFile();
             RandomAccessFile raf = new RandomAccessFile(file, "rw");
             raf.setLength(fileSize);
             raf.close();
@@ -158,7 +157,7 @@ public class Storage {
      * @return List of file names matching the query
      */
     public List<String> searchForFile(String query) {
-
+        //TODO: Remove duplicates from result
 
         List<String> matches = new ArrayList<>();
 

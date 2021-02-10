@@ -13,46 +13,51 @@ import java.util.concurrent.Future;
 
 public class Main {
 
-    public static void main(String[] args) throws Exception{
+    public static void main(String[] args){
         String configPath = args[0];
         Properties config  = new Properties();
         File file = new File(configPath);
+        try{
+            BufferedReader br = new BufferedReader(new FileReader(file));
 
-        BufferedReader br = new BufferedReader(new FileReader(file));
-
-        String st;
-        String[] KeyVal;
-        while ((st = br.readLine()) != null){
-            KeyVal = st.split("=");
-            config.setProperty(KeyVal[0],KeyVal[1]);
-            System.out.println(KeyVal[0] + ":" + KeyVal[1]);
-        }
-        FreeNetFileTransferService client = FreeNetFileTransferService.getInstance(config);
-
-
-        Scanner scanner = new Scanner(System.in);
-        while (true){
-            System.out.println("Enter command: ");
-            String command = scanner.nextLine();
-            String fileName = "";
-            switch (command){
-                case "exit":
-                    System.out.println("Exiting....");
-                    System.exit(0);
-                case "search":
-                    System.out.println("Enter file name: ");
-                    fileName = scanner.nextLine();
-                    Future<List<String>> queryResultFuture = client.searchForFile(fileName);
-                    List<String> queryResult = queryResultFuture.get();
-                    for(String name : queryResult) {
-                        System.out.println("-- " + name);
-                    }
-                    break;
-                case "download":
-                    System.out.println("Enter file name: ");
-                    fileName = scanner.nextLine();
-                    client.downloadFile(fileName);
+            String st;
+            String[] KeyVal;
+            while ((st = br.readLine()) != null){
+                KeyVal = st.split("=");
+                config.setProperty(KeyVal[0],KeyVal[1]);
+                System.out.println(KeyVal[0] + ":" + KeyVal[1]);
             }
+            FreeNetFileTransferService client = FreeNetFileTransferService.getInstance(config);
+
+
+            Scanner scanner = new Scanner(System.in);
+            while (true){
+                System.out.println("Enter command: ");
+                String command = scanner.nextLine();
+                String fileName = "";
+                switch (command){
+                    case "exit":
+                        System.out.println("Exiting....");
+                        System.exit(0);
+                    case "search":
+                        System.out.println("Enter file name: ");
+                        fileName = scanner.nextLine();
+                        Future<List<String>> queryResultFuture = client.searchForFile(fileName);
+                        List<String> queryResult = queryResultFuture.get();
+                        for(String name : queryResult) {
+                            System.out.println("--> " + name);
+                        }
+                        break;
+                    case "download":
+                        System.out.println("Enter file name: ");
+                        fileName = scanner.nextLine();
+                        client.downloadFile(fileName);
+                }
+            }
+
+        }
+        catch (Exception e){
+            e.printStackTrace();
         }
 
     }
