@@ -33,3 +33,7 @@ build/
 .vscode/
 
 *.class
+
+test_data/node_1/cache/
+
+test_data/node_2/cache/
