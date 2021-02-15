@@ -8,7 +8,9 @@ import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -116,7 +118,7 @@ public class Storage {
     }
 
     /**
-     * Get path of the file
+     * Check if file exists in the node
      *
      * @param fileName Name of the file
      * @return String File Path
@@ -127,6 +129,16 @@ public class Storage {
             fileExists = searchDirectory(cacheDir, fileName);
         }
         return fileExists;
+    }
+
+    /**
+     * Check if file exists in a directory
+     *
+     * @param fileName Name of the file
+     * @return String File Path
+     */
+    public Boolean checkFileExists(String fileName, String directory) {
+        return searchDirectory(directory, fileName);
     }
 
     /**
@@ -157,10 +169,7 @@ public class Storage {
      * @return List of file names matching the query
      */
     public List<String> searchForFile(String query) {
-        //TODO: Remove duplicates from result
-
-        List<String> matches = new ArrayList<>();
-
+        Set<String> matches = new HashSet<>();
         String thisLine;
         String regex = "(.*)" + query + "(.*)";
         try {
@@ -180,7 +189,7 @@ public class Storage {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return matches;
+        return new ArrayList<>(matches);
     }
 
     /**

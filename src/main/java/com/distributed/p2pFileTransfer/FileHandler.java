@@ -13,7 +13,6 @@ import java.util.logging.Logger;
 
 
 public class FileHandler{
-    //private AbstractFileTransferService fileTransferService;
     private String cacheDir;
     private String localDir;
     private long cacheSize;
@@ -27,7 +26,7 @@ public class FileHandler{
         this.cacheSize = cacheSize;
         logger = Logger.getLogger(this.getClass().getName());
         this.fileStorage = new Storage(cacheDir, localDir, cacheSize, this.getClass().getName());
-        executorService = Executors.newFixedThreadPool(1);
+        executorService = Executors.newCachedThreadPool();
         runServer(port);
 
     }
@@ -39,7 +38,7 @@ public class FileHandler{
         SpringApplication server = new SpringApplication(com.distributed.p2pFileTransfer.Main.class);
         server.setDefaultProperties(Collections.singletonMap("server.port", String.valueOf(port)));
         server.run();
-        System.out.println("File server listening to incoming connections... on port " + String.valueOf(port));
+        System.out.println("File server listening to incoming connections... on port " + port);
     }
 
 
@@ -55,10 +54,20 @@ public class FileHandler{
 
         FileDownloadCallable task = new FileDownloadCallable(source, fileName, destination, this.fileStorage, this.getClass().getName());
         Future<FileDownloadResult> result = this.executorService.submit(task);
+        this.logger.log(Level.INFO, String.format("Attempting to download %s to %s ",fileName,destination));
         if (result.isDone()) {
             try {
-                System.out.println(result.get());
-                this.logger.log(Level.INFO, String.valueOf(result.get()));
+                FileDownloadResult response = result.get();
+                switch (response.state){
+                    case 0:
+                        this.logger.log(Level.INFO, String.format("%s downloadFile completed to %s ",fileName,destination));
+                        break;
+                    case 1:
+                    case 2:
+                        this.logger.log(Level.INFO, "File Download failed");
+                        break;
+                }
+                this.logger.log(Level.INFO, String.valueOf(response.body));
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }

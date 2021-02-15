@@ -34,18 +34,21 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
     @Override
     public FileDownloadResult call() throws IOException {
         FileDownloadResult result;
-
-        URL url = new URL("http://" + source.getIpAddress().getHostAddress() + ":" + source.getPort() + "/file/" + fileName);
-
-        HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
-
-
-        String fileHash = httpURLConnection.getHeaderField("Hash");
-        int fileSize = httpURLConnection.getContentLength();
-        if (fileHash != null) {
-            result = downloadFile(httpURLConnection, fileHash, fileSize, destination);
-        } else {
-            result = new FileDownloadResult("Hash not avaialable", 1);
+        Boolean fileExists = fileStorage.checkFileExists(fileName,destination);
+        if (!fileExists){
+            URL url = new URL("http://" + source.getIpAddress().getHostAddress() + ":" + source.getPort() + "/file/" + fileName);
+            HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+            String fileHash = httpURLConnection.getHeaderField("Hash");
+            int fileSize = httpURLConnection.getContentLength();
+            fileStorage.makeCacheSpace(fileSize);
+            if (fileHash != null) {
+                result = downloadFile(httpURLConnection, fileHash, fileSize, destination);
+            } else {
+                result = new FileDownloadResult("Hash not available", 1);
+            }
+        }
+        else {
+            result = new FileDownloadResult("File already exists locally", 1);
         }
         return result;
     }
@@ -78,17 +81,13 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
                 this.logger.log(Level.INFO, String.format("Downloaded %s", saveFilePath));
                 String hexHash = this.fileStorage.getFileHash(new File(saveFilePath));
                 if (hexHash.equals(fileHash)) {
-                    this.logger.log(Level.INFO, "File hashes match");
                     return new FileDownloadResult("success", 0);
                 } else {
-                    this.logger.log(Level.INFO, "File hashes do not match");
                     return new FileDownloadResult("Hash do not match", 1);
                 }
             } else {
                 return new FileDownloadResult("Input stream empty", 0);
             }
-
-
         } else {
             return new FileDownloadResult(httpURLConnection.getResponseMessage(), 1);
         }
