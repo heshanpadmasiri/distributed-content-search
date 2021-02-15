@@ -5,6 +5,7 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 class Network {
 
@@ -163,6 +164,21 @@ class Network {
         System.out.println("failed, can’t register. BS full");
       }
     }
+  }
+
+  /**
+   * Used to disconnect form bootstrap
+   * @return future to be resolved when disconnect completed
+   */
+  public Future<Result> disconnet(){
+    return null;
+  }
+
+  /**
+   * Used to show the routing table
+   */
+  public void printRoutingTable(){
+
   }
 
   private void sendJoinRequest(Node node) {

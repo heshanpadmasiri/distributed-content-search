@@ -1,9 +1,18 @@
 package com.distributed.p2pFileTransfer;
 
+import sun.rmi.runtime.Log;
+
+import java.io.File;
+import java.io.IOException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 public abstract class AbstractFileTransferService {
   private final Network network;
@@ -14,7 +23,8 @@ public abstract class AbstractFileTransferService {
   private Node currentNode;
   private Thread queryListenerThread;
 
-  public AbstractFileTransferService(FileHandler fileHandler, int port, Node bootstrapServer) throws SocketException, UnknownHostException, NodeNotFoundException {
+  public AbstractFileTransferService(FileHandler fileHandler, int port, Node bootstrapServer)
+      throws SocketException, UnknownHostException, NodeNotFoundException {
     this.fileHandler = fileHandler;
     this.queryListener = new QueryListener(this, port);
     this.queryDispatcher = new QueryDispatcher(this);
@@ -23,6 +33,31 @@ public abstract class AbstractFileTransferService {
     queryListenerThread = new Thread(this.queryListener);
     queryListenerThread.start();
     this.network = new Network(this, bootstrapServer);
+    setLoggers(Paths.get(""));
+  }
+
+  private void setLoggers(Path logDirectory) {
+    Path logFilePath = Paths.get(logDirectory.toString(), "log");
+    List<Logger> loggers = new LinkedList<>();
+    loggers.add(Logger.getLogger(this.fileHandler.getClass().getName()));
+    loggers.add(Logger.getLogger(this.queryListener.getClass().getName()));
+    loggers.add(Logger.getLogger(this.queryDispatcher.getClass().getName()));
+    loggers.add(Logger.getLogger(this.network.getClass().getName()));
+    loggers.add(Logger.getLogger(UnAcknowledgedQueryExecutor.class.getName()));
+    try {
+      java.util.logging.FileHandler fileHandler =
+          new java.util.logging.FileHandler(logFilePath.toString());
+      loggers.stream()
+          .forEach(
+              logger -> {
+                logger.addHandler(fileHandler);
+                SimpleFormatter formatter = new SimpleFormatter();
+                fileHandler.setFormatter(formatter);
+                logger.setUseParentHandlers(false);
+              });
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 
   /**
@@ -36,11 +71,11 @@ public abstract class AbstractFileTransferService {
 
   /**
    * Use to flood the network with a query and get the response
+   *
    * @param queryBody Body of the query
    * @return results of flooding the network
    */
   protected abstract Future<List<QueryResult>> floodNetwork(String queryBody);
-
 
   /**
    * Used to download a file. Will download the first file that exactly matches the file name.
@@ -89,7 +124,22 @@ public abstract class AbstractFileTransferService {
     return commandBuilder;
   }
 
-  void stop(){
+  /**
+   * Used to gracefully shutdown the file transfer service
+    * @return future that resolves when shutdown completed
+   */
+  public Future<Result> shutdown(){
+    return this.network.disconnet();
+  }
+
+  /**
+   * Used to print the routing table
+   */
+  public void printRoutingTable(){
+    this.network.printRoutingTable();
+  }
+
+  void stop() {
     queryListener.stop();
     try {
       queryListenerThread.join();
