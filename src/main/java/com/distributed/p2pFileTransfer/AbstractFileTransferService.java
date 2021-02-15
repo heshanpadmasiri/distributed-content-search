@@ -1,9 +1,16 @@
 package com.distributed.p2pFileTransfer;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 public abstract class AbstractFileTransferService {
   private final Network network;
@@ -23,6 +30,27 @@ public abstract class AbstractFileTransferService {
     queryListenerThread = new Thread(this.queryListener);
     queryListenerThread.start();
     this.network = new Network(this, bootstrapServer);
+    setLoggers(Paths.get(""));
+  }
+
+  private void setLoggers(Path logDirectory){
+    Path logFilePath = Paths.get(logDirectory.toString(), "log");
+    List<Logger> loggers = new LinkedList<>();
+    loggers.add(Logger.getLogger(this.fileHandler.getClass().getName()));
+    loggers.add(Logger.getLogger(this.queryListener.getClass().getName()));
+    loggers.add(Logger.getLogger(this.queryDispatcher.getClass().getName()));
+    loggers.add(Logger.getLogger(this.network.getClass().getName()));
+    loggers.stream().forEach(logger -> {
+      try {
+        java.util.logging.FileHandler fileHandler = new java.util.logging.FileHandler(logFilePath.toString());
+        logger.addHandler(fileHandler);
+        SimpleFormatter formatter = new SimpleFormatter();
+        fileHandler.setFormatter(formatter);
+        logger.setUseParentHandlers(false);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    });
   }
 
   /**
