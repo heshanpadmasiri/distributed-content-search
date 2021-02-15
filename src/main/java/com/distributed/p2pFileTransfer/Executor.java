@@ -8,6 +8,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -82,11 +83,13 @@ class AcknowledgedQueryExecutor extends Executor {
 
 class FileSearchQueryExecutor extends AcknowledgedQueryExecutor {
   FileHandler fileHandler;
+  String fileName;
 
   public FileSearchQueryExecutor(
       Query query, DatagramSocket socket, QueryListener queryListener, FileHandler fileHandler) {
     super(query, socket, queryListener);
     this.fileHandler = fileHandler;
+    this.fileName = query.body.split(" ")[4].replaceAll("\"", "");
   }
 
   @Override
@@ -104,7 +107,10 @@ class FileSearchQueryExecutor extends AcknowledgedQueryExecutor {
               .forEach(
                   fileName -> {
                     try {
-                      fileHandler.downloadFileToCache(source, fileName.replaceAll("_", " ")).get();
+                      Future<FileDownloadResult> future =  fileHandler.downloadFileToCache(source, fileName.replaceAll("_", " "));
+                      if (fileName.equals(this.fileName)){
+                        future.get();
+                      }
                     } catch (NullPointerException ignored) {
 
                     } catch (InterruptedException | ExecutionException e) {
