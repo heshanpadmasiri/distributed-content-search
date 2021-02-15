@@ -103,7 +103,7 @@ public class Storage {
         String thisLine;
         Boolean fileExists = false;
         try {
-            BufferedReader br = new BufferedReader(new FileReader(searchDir + "/" + fileListName));
+            BufferedReader br = new BufferedReader(new FileReader(searchDir + File.separator + fileListName));
             while ((thisLine = br.readLine()) != null) {
                 if (thisLine.matches(fileName)) {
                     fileExists = true;
@@ -173,8 +173,8 @@ public class Storage {
         String thisLine;
         String regex = "(.*)" + query + "(.*)";
         try {
-            BufferedReader cacheFileListingReader = new BufferedReader(new FileReader(cacheDir + "/" + fileListName));
-            BufferedReader localFileListingReader = new BufferedReader(new FileReader(localDir + "/" + fileListName));
+            BufferedReader cacheFileListingReader = new BufferedReader(new FileReader(cacheDir + File.separator + fileListName));
+            BufferedReader localFileListingReader = new BufferedReader(new FileReader(localDir + File.separator + fileListName));
             while ((thisLine = cacheFileListingReader.readLine()) != null) {
                 if (thisLine.matches(regex)) {
                     matches.add(thisLine);
@@ -223,7 +223,7 @@ public class Storage {
      * @throws IOException
      */
     public void updateDirectoryListing(String dir, String fileName) throws IOException {
-        File file = new File(dir + "/" + fileListName);
+        File file = new File(dir + File.separator + fileListName);
         if (!file.exists()) {
             file.createNewFile();
         }

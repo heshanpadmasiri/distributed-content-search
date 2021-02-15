@@ -66,7 +66,7 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
         InputStream inputStream = httpURLConnection.getInputStream();
         // Byte reader
         // Get download destination path
-        String saveFilePath = destination + "/" + fileName;
+        String saveFilePath = destination + File.separator + fileName;
 
         FileOutputStream outputStream = new FileOutputStream(saveFilePath);
         int bytesRead;
