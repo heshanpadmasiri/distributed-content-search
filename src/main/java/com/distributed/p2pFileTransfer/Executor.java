@@ -3,10 +3,14 @@ package com.distributed.p2pFileTransfer;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 public abstract class Executor implements Callable<QueryResult> {
   final Logger logger;
@@ -80,11 +84,7 @@ class FileSearchQueryExecutor extends AcknowledgedQueryExecutor {
   FileHandler fileHandler;
 
   public FileSearchQueryExecutor(
-      Query query,
-      DatagramSocket socket,
-      QueryListener queryListener,
-      FileHandler fileHandler
-      ) {
+      Query query, DatagramSocket socket, QueryListener queryListener, FileHandler fileHandler) {
     super(query, socket, queryListener);
     this.fileHandler = fileHandler;
   }
@@ -94,7 +94,29 @@ class FileSearchQueryExecutor extends AcknowledgedQueryExecutor {
     String[] data = message.split(" ");
     String command = data[1];
     String id = data[5];
-    if(command.equals("SEROK") && id.equals(query.id.toString())){
+    if (command.equals("SEROK") && id.equals(query.id.toString())) {
+      int numberOfFiles = Integer.parseInt(data[2]);
+      if (numberOfFiles > 0) {
+        try {
+          Node source = new Node(InetAddress.getByName(data[3]), Integer.parseInt(data[4]));
+          Stream.of(data)
+              .skip(6)
+              .forEach(
+                  fileName -> {
+                    try {
+                      fileHandler.downloadFileToCache(source, fileName.replaceAll("_", " ")).get();
+                    } catch (NullPointerException ignored) {
+
+                    } catch (InterruptedException | ExecutionException e) {
+                      e.printStackTrace();
+                    }
+                  });
+        } catch (UnknownHostException e) {
+          logger.log(
+              Level.WARNING,
+              String.format("Failed to get Inet address ipAddress: %s port: %s", data[3], data[4]));
+        }
+      }
       super.notify(message);
     }
   }
@@ -135,4 +157,3 @@ class UnAcknowledgedQueryExecutor extends Executor {
     return new QueryResult("Message send successfully", 0, query);
   }
 }
-
