@@ -10,128 +10,131 @@ import java.util.stream.IntStream;
 
 public class FreeNetFileTransferService extends AbstractFileTransferService {
 
-    private static FreeNetFileTransferService instance;
-    private ExecutorService executorService;
+  private static FreeNetFileTransferService instance;
+  private ExecutorService executorService;
 
-    private FreeNetFileTransferService(FileHandler fileHandler, int port, Node boostrapServer)
-            throws SocketException, UnknownHostException, NodeNotFoundException {
-        super(fileHandler, port, boostrapServer);
-        this.executorService = Executors.newCachedThreadPool();
+  private FreeNetFileTransferService(FileHandler fileHandler, int port, Node boostrapServer)
+      throws SocketException, UnknownHostException, NodeNotFoundException {
+    super(fileHandler, port, boostrapServer);
+    this.executorService = Executors.newCachedThreadPool();
+  }
+
+  public static synchronized FreeNetFileTransferService getInstance(Properties config)
+      throws SocketException, UnknownHostException, NodeNotFoundException {
+    if (instance == null) {
+      Configuration.setConfiguration(config);
+      FileHandler fileHandler =
+          new FileHandler(
+              Configuration.getCacheDir(),
+              Configuration.getLocalDir(),
+              Configuration.getCacheSize(),
+              Configuration.getPort());
+      Node bootstrapServer =
+          new Node(
+              InetAddress.getByName(Configuration.getBootstrapServerIp()),
+              Integer.parseInt(Configuration.getBootstrapServerport()));
+
+      instance =
+          new FreeNetFileTransferService(
+              fileHandler, Integer.parseInt(Configuration.getPort()), bootstrapServer);
     }
+    return instance;
+  }
 
-    public static synchronized FreeNetFileTransferService getInstance(Properties config)
-            throws SocketException, UnknownHostException, NodeNotFoundException {
-        if (instance == null) {
-            Configuration.setConfiguration(config);
-            FileHandler fileHandler =
-                    new FileHandler(
-                            Configuration.getCacheDir(),
-                            Configuration.getLocalDir(),
-                            Configuration.getCacheSize(),
-                            Configuration.getPort());
-            Node bootstrapServer =
-                    new Node(
-                            InetAddress.getByName(Configuration.getBootstrapServerIp()),
-                            Integer.parseInt(Configuration.getBootstrapServerport()));
-
-            instance =
-                    new FreeNetFileTransferService(
-                            fileHandler, Integer.parseInt(Configuration.getPort()), bootstrapServer);
-        }
-        return instance;
-    }
-
-    @Override
-    public Future<List<String>> searchForFile(String query) {
-        Callable<List<String>> searchExecutor =
-                () -> {
-                    String queryBody = getCommandBuilder().getSearchCommand(query);
-                    List<QueryResult> results = floodNetwork(queryBody).get();
-                    Set<String> files = new TreeSet<>();
-                    results.forEach(
-                            result -> {
-                                String[] data = result.getBody().split(" ");
-                                int fileCount = Integer.parseInt(data[2]);
-                                if (fileCount > 0) {
-                                    IntStream.range(6, 6 + fileCount)
-                                            .forEach(
-                                                    idx -> {
-                                                        files.add(data[idx]);
-                                                    });
-                                }
-                            });
-                    return new ArrayList<>(files);
-                };
-        return executorService.submit(searchExecutor);
-    }
-
-    @Override
-    protected Future<List<QueryResult>> floodNetwork(String queryBody) {
-        Callable<List<QueryResult>> floodExecutor =
-                () -> {
-                    List<Node> neighbours = new LinkedList<>();
-                    this.getNetwork().getNeighbours().forEachRemaining(neighbours::add);
-                    List<Query> queries = Query.createQuery(queryBody, neighbours);
-                    List<QueryResult> results =
-                            this.getQueryDispatcher().dispatchAll(queries).stream()
-                                    .map(
-                                            each -> {
-                                                try {
-                                                    return each.get();
-                                                } catch (InterruptedException | ExecutionException e) {
-                                                    e.printStackTrace();
-                                                }
-                                                return null;
-                                            })
-                                    .collect(Collectors.toList());
-                    return results;
-                };
-        return executorService.submit(floodExecutor);
-    }
-
-    @Override
-    public void downloadFile(String fileName) {
-        String queryBody = getCommandBuilder().getSearchCommand(fileName);
-        Callable<QueryResult> fileFinder = () -> {
-            List<Node> neighbours = new LinkedList<>();
-            this.getNetwork().getNeighbours().forEachRemaining(neighbours::add);
-            List<Query> queries = Query.createQuery(queryBody, neighbours);
-            for (Query query : queries) {
-                try {
-                    QueryResult result = this.getQueryDispatcher().dispatchOne(query).get(20, TimeUnit.SECONDS);
-                    String[] data = result.getBody().split(" ");
-                    int numberOfFiles = Integer.parseInt(data[2]);
-                    if (numberOfFiles > 0) {
-                        for (int i = 0; i < numberOfFiles; i++) {
-                            String name = data[6 + i].replaceAll("_", " ");
-                            if (name.equals(fileName)) {
-                                return result;
-                            }
-                        }
-                    }
-                } catch (TimeoutException ignored) {
+  @Override
+  public Future<List<String>> searchForFile(String query) {
+    Callable<List<String>> searchExecutor =
+        () -> {
+          String queryBody = getCommandBuilder().getSearchCommand(query);
+          List<QueryResult> results = floodNetwork(queryBody).get();
+          Set<String> files = new TreeSet<>();
+          results.forEach(
+              result -> {
+                String[] data = result.getBody().split(" ");
+                int fileCount = Integer.parseInt(data[2]);
+                if (fileCount > 0) {
+                  IntStream.range(6, 6 + fileCount)
+                      .forEach(
+                          idx -> {
+                            files.add(data[idx]);
+                          });
                 }
-            }
-            throw new FileNotFoundException();
+              });
+          return new ArrayList<>(files);
         };
-        try {
-            QueryResult result = executorService.submit(fileFinder).get();
-            String[] data = result.getBody().split(" ");
-            Node source = new Node(InetAddress.getByName(data[3]), Integer.parseInt(data[4]));
-            getFileHandler().downloadFileToLocal(source, fileName);
-        } catch (InterruptedException | ExecutionException | UnknownHostException e) {
-            e.printStackTrace();
-        }
-    }
+    return executorService.submit(searchExecutor);
+  }
 
-    @Override
-    public void downloadFileFrom(String fileName, Node source)
-            throws FileNotFoundException, DestinationAlreadyExistsException, NodeNotFoundException {
-        getFileHandler().downloadFileToLocal(source, fileName);
-    }
+  @Override
+  protected Future<List<QueryResult>> floodNetwork(String queryBody) {
+    Callable<List<QueryResult>> floodExecutor =
+        () -> {
+          List<Node> neighbours = new LinkedList<>();
+          this.getNetwork().getNeighbours().forEachRemaining(neighbours::add);
+          List<Query> queries = Query.createQuery(queryBody, neighbours);
+          List<QueryResult> results =
+              this.getQueryDispatcher().dispatchAll(queries).stream()
+                  .map(
+                      each -> {
+                        try {
+                          return each.get();
+                        } catch (InterruptedException | ExecutionException e) {
+                          e.printStackTrace();
+                        }
+                        return null;
+                      })
+                  .collect(Collectors.toList());
+          return results;
+        };
+    return executorService.submit(floodExecutor);
+  }
 
-    @Override
-    void stop() {
-        super.stop();
+  @Override
+  public Future<FileDownloadResult> downloadFile(String fileName) {
+    String queryBody = getCommandBuilder().getSearchCommand(fileName);
+    Callable<QueryResult> fileFinder =
+        () -> {
+          List<Node> neighbours = new LinkedList<>();
+          this.getNetwork().getNeighbours().forEachRemaining(neighbours::add);
+          List<Query> queries = Query.createQuery(queryBody, neighbours);
+          for (Query query : queries) {
+            try {
+              QueryResult result =
+                  this.getQueryDispatcher().dispatchOne(query).get(20, TimeUnit.SECONDS);
+              String[] data = result.getBody().split(" ");
+              int numberOfFiles = Integer.parseInt(data[2]);
+              if (numberOfFiles > 0) {
+                for (int i = 0; i < numberOfFiles; i++) {
+                  String name = data[6 + i].replaceAll("_", " ");
+                  if (name.equals(fileName)) {
+                    return result;
+                  }
+                }
+              }
+            } catch (TimeoutException ignored) {
+            }
+          }
+          throw new FileNotFoundException();
+        };
+    try {
+      QueryResult result = executorService.submit(fileFinder).get();
+      String[] data = result.getBody().split(" ");
+      Node source = new Node(InetAddress.getByName(data[3]), Integer.parseInt(data[4]));
+      return getFileHandler().downloadFileToLocal(source, fileName);
+    } catch (InterruptedException | ExecutionException | UnknownHostException e) {
+      e.printStackTrace();
     }
+    return null;
+  }
+
+  @Override
+  public Future<FileDownloadResult> downloadFileFrom(String fileName, Node source)
+      throws FileNotFoundException, DestinationAlreadyExistsException, NodeNotFoundException {
+    return getFileHandler().downloadFileToLocal(source, fileName);
+  }
+
+  @Override
+  void stop() {
+    super.stop();
+  }
 }

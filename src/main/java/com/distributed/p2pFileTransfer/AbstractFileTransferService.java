@@ -2,7 +2,6 @@ package com.distributed.p2pFileTransfer;
 
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.Future;
 
@@ -50,8 +49,9 @@ public abstract class AbstractFileTransferService {
    * @throws FileNotFoundException If no file is found that exactly matches the file name
    * @throws DestinationAlreadyExistsException If the destination file already exists. <b>This
    *     method will not overwrite existing files</b>
+   * @return
    */
-  public abstract void downloadFile(String fileName)
+  public abstract Future<FileDownloadResult> downloadFile(String fileName)
       throws FileNotFoundException, DestinationAlreadyExistsException;
 
   /**
@@ -64,8 +64,9 @@ public abstract class AbstractFileTransferService {
    * @throws DestinationAlreadyExistsException If the destination file already exists. <b>This
    *     method will not overwrite existing files</b>
    * @throws NodeNotFoundException If source node refused to connect
+   * @return
    */
-  public abstract void downloadFileFrom(String fileName, Node source)
+  public abstract Future<FileDownloadResult> downloadFileFrom(String fileName, Node source)
       throws FileNotFoundException, DestinationAlreadyExistsException, NodeNotFoundException;
 
   Network getNetwork() {
