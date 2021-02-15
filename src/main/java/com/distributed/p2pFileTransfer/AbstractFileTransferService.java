@@ -124,6 +124,21 @@ public abstract class AbstractFileTransferService {
     return commandBuilder;
   }
 
+  /**
+   * Used to gracefully shutdown the file transfer service
+    * @return future that resolves when shutdown completed
+   */
+  public Future<Result> shutdown(){
+    return this.network.disconnet();
+  }
+
+  /**
+   * Used to print the routing table
+   */
+  public void printRoutingTable(){
+    this.network.printRoutingTable();
+  }
+
   void stop() {
     queryListener.stop();
     try {
