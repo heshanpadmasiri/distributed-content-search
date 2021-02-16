@@ -32,7 +32,7 @@ class Network {
    * @param fileTransferService
    * @param boostrapServer
    */
-  public Network(AbstractFileTransferService fileTransferService, Node boostrapServer) {
+  public Network(AbstractFileTransferService fileTransferService, Node boostrapServer) throws NodeNotFoundException{
     this.fileTransferService = fileTransferService;
     this.boostrapServer = boostrapServer;
     this.cb = fileTransferService.getCommandBuilder();
