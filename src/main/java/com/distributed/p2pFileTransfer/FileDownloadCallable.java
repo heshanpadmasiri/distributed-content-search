@@ -81,7 +81,7 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
                 this.logger.log(Level.INFO, String.format("Downloaded %s", saveFilePath));
                 String hexHash = this.fileStorage.getFileHash(new File(saveFilePath));
                 if (hexHash.equals(fileHash)) {
-                    return new FileDownloadResult("success", 0);
+                    return new FileDownloadResult("File download successful", 0);
                 } else {
                     return new FileDownloadResult("Hash do not match", 1);
                 }
