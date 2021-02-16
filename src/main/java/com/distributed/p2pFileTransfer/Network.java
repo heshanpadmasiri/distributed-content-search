@@ -22,10 +22,8 @@ class Network {
   private QueryDispatcher queryDispatcher;
   private ResponseHandler responseHandler;
 
-  private CommandBuilder cb;
+  private final CommandBuilder cb;
 
-  private Node
-      node; // ?????????????????????????????????????????????????????????????????????????????????
   final String USERNAME = "USERNAME"; // ////////////////////////
   /**
    * Representation of nodes view of the network. Concrete implementations must connect with the
@@ -74,8 +72,9 @@ class Network {
   Iterator<Node> getNeighbours() {
     // have to change the method params returned
     ArrayList<Node> list = new ArrayList<Node>();
-
-    for (Map.Entry<Integer, ArrayList<Node>> entityArry : routingTable.entrySet()) {
+    TreeMap<Integer, ArrayList<Node>> arr = new TreeMap<Integer, ArrayList<Node>>();
+    arr.putAll(routingTable);
+    for (Map.Entry<Integer, ArrayList<Node>> entityArry : arr.entrySet()) {
       list.addAll(entityArry.getValue());
     }
 
@@ -178,7 +177,17 @@ class Network {
    * Used to show the routing table
    */
   public void printRoutingTable(){
-
+    ArrayList<Node> list;
+    TreeMap<Integer, ArrayList<Node>> arr = new TreeMap<>();
+    arr.putAll(routingTable);
+    for (Map.Entry<Integer, ArrayList<Node>> entityArray : arr.entrySet()) {
+      list = entityArray.getValue();
+      for(Node node: list) {
+        System.out.print("File Count: "+ entityArray.getKey());
+        System.out.print("  Node: " + node.getIpAddress()+ ":" + node.getPort());
+        System.out.println();
+      }
+    }
   }
 
   /**
