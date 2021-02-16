@@ -128,7 +128,7 @@ public abstract class AbstractFileTransferService {
    * Used to gracefully shutdown the file transfer service
     * @return future that resolves when shutdown completed
    */
-  public Future<Result> shutdown(){
+  public Future<QueryResult> shutdown(){
     return this.network.disconnet();
   }
 
