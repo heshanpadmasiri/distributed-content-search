@@ -181,6 +181,13 @@ class Network {
 
   }
 
+  /**
+   * Used to remove none responsive neighbours from the routing table
+   */
+  public void removeNeighbour(Node node){
+
+  }
+
   private void sendJoinRequest(Node node) {
     Query query = Query.createQuery(cb.getJoinCommand(), node);
     queryDispatcher.dispatchOne(query);
