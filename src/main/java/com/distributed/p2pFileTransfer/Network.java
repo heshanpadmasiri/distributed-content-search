@@ -12,9 +12,6 @@ class Network {
   private final AbstractFileTransferService fileTransferService;
   private final Node boostrapServer;
 
-  //    private TreeMap<Integer, ArrayList<Node>> treeMap;
-  //    private Map routingTable = Collections.synchronizedMap(treeMap);
-
   private TreeMap<Integer, ArrayList<Node>> routingTable =
       new TreeMap<Integer, ArrayList<Node>>(Collections.reverseOrder());
   ;
@@ -24,7 +21,7 @@ class Network {
 
   private final CommandBuilder cb;
 
-  final String USERNAME = "USERNAME"; // ////////////////////////
+  final String USERNAME = "USERNAME";
   /**
    * Representation of nodes view of the network. Concrete implementations must connect with the
    * bootstrap server and set the neighbours. If the boostrap server refused connection constructor
@@ -194,7 +191,10 @@ class Network {
    * Used to remove none responsive neighbours from the routing table
    */
   public void removeNeighbour(Node node){
-
+    for (Map.Entry<Integer, ArrayList<Node>> entityArry : routingTable.entrySet()) {
+      entityArry.getValue().removeIf(entity ->
+              node.getPort() == entity.getPort() && node.getIpAddress() == entity.getIpAddress());
+    }
   }
 
   private void sendJoinRequest(Node node) {
