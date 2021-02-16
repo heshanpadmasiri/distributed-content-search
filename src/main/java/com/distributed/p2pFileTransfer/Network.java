@@ -111,7 +111,14 @@ class Network {
           // remove
           entityArry.getValue().remove(entity);
         } else {
-          routingTable.get(1).add(entity);
+          if (routingTable.containsKey(1)) {
+            routingTable.get(1).add(entity);
+          } else {
+            // if key file count doesn't exist
+            ArrayList<Node> temp = new ArrayList<Node>();
+            temp.add(entity);
+            routingTable.put(1, temp);
+          }
         }
       }
     }
