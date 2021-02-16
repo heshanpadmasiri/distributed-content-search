@@ -15,11 +15,13 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
     private final Logger logger;
     private Node source;
     private String fileName;
+    private String strippedFileName;
     private String destination;
 
     FileDownloadCallable(Node source, String filename, String destination, Storage fileStorage, String loggerName) {
         this.source = source;
         this.fileName = filename;
+        this.strippedFileName = fileName.replaceAll(" ", "_");
         this.destination = destination;
         this.fileStorage = fileStorage;
         this.logger = Logger.getLogger(loggerName);
@@ -36,7 +38,7 @@ public class FileDownloadCallable implements Callable<FileDownloadResult> {
         FileDownloadResult result;
         Boolean fileExists = fileStorage.checkFileExists(fileName,destination);
         if (!fileExists){
-            URL url = new URL("http://" + source.getIpAddress().getHostAddress() + ":" + source.getPort() + "/file/" + fileName);
+            URL url = new URL("http://" + source.getIpAddress().getHostAddress() + ":" + source.getPort() + "/file/" + strippedFileName);
             HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
             String fileHash = httpURLConnection.getHeaderField("Hash");
             int fileSize = httpURLConnection.getContentLength();

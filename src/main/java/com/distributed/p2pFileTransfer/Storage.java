@@ -203,10 +203,10 @@ public class Storage {
         if (file.exists()) {
             try {
                 MessageDigest md = MessageDigest.getInstance("SHA-1");
-                md.update(readContentIntoByteArray(file));
+                md.update(FileUtils.readFileToByteArray(file));
                 byte[] hash = md.digest();
                 return HexUtils.toHexString(hash);
-            } catch (NoSuchAlgorithmException e) {
+            } catch (NoSuchAlgorithmException | IOException e) {
                 e.printStackTrace();
                 return null;
             }

@@ -79,19 +79,24 @@ public class Main {
                         break;
                     case "download":
                         Future<FileDownloadResult> downloadResponseFuture = client.downloadFile(fileName);
-                        FileDownloadResult downloadResult = downloadResponseFuture.get();
-                        String body = downloadResult.getBody();
-                        switch (downloadResult.getState()){
-                            case 0:
-                                System.out.printf(">> Success: %s%n",body);
-                                break;
-                            case 1:
-                            case 2:
-                                System.out.printf(">> Error: %s%n",body);
-                                break;
-                            default:
-                                System.out.println(">> Issue with File Download");
-                                break;
+                        if (downloadResponseFuture != null){
+                            FileDownloadResult downloadResult = downloadResponseFuture.get();
+                            String body = downloadResult.getBody();
+                            switch (downloadResult.getState()){
+                                case 0:
+                                    System.out.printf(">> Success: %s%n",body);
+                                    break;
+                                case 1:
+                                case 2:
+                                    System.out.printf(">> Error: %s%n",body);
+                                    break;
+                                default:
+                                    System.out.println(">> Issue with File Download");
+                                    break;
+                            }
+                        }
+                        else{
+                            System.out.println(">> Couldn't find an exact match for the filename");
                         }
                         break;
                     default:
