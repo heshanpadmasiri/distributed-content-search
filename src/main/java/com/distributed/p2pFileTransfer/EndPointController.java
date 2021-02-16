@@ -43,13 +43,15 @@ public class EndPointController {
     @RequestMapping("/file/{name:.+}")
     public ResponseEntity<Resource> downloadFile(HttpServletResponse res, @PathVariable("name") String fileName) throws IOException {
 
-        logger.log(Level.INFO, "Attempting to download " + fileName);
-        Boolean fileExists = fileStorage.checkFileExists(fileName);
+        //Re-convert the underscores in the file to spaces
+        String originalFileName = fileName.replaceAll("_", " ");
+        logger.log(Level.INFO, "Attempting to download " + originalFileName);
+        Boolean fileExists = fileStorage.checkFileExists(originalFileName);
 
         if (fileExists) {
             String mimeType = "application/octet-stream";
             res.setContentType(mimeType);
-            File file = fileStorage.generateRandomFile(fileName);
+            File file = fileStorage.generateRandomFile(originalFileName);
             res.setHeader("Content-Disposition", "inline; filename=\"" + file.getName() + "\"");
             res.setContentLength((int) file.length());
 
@@ -69,7 +71,8 @@ public class EndPointController {
 
     @RequestMapping("/search/{name:.+}")
     public ResponseEntity<String> searchFile(HttpServletResponse res, @PathVariable("name") String fileName) {
-        List<String> matchingNames = fileStorage.searchForFile(fileName);
+        String originalFileName = fileName.replaceAll("_", "_");
+        List<String> matchingNames = fileStorage.searchForFile(originalFileName);
         String json = new Gson().toJson(matchingNames);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_JSON)

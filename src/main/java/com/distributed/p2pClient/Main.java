@@ -78,8 +78,8 @@ public class Main {
                         }
                         break;
                     case "download":
-                        try{
-                            Future<FileDownloadResult> downloadResponseFuture = client.downloadFile(fileName);
+                        Future<FileDownloadResult> downloadResponseFuture = client.downloadFile(fileName);
+                        if (downloadResponseFuture != null){
                             FileDownloadResult downloadResult = downloadResponseFuture.get();
                             String body = downloadResult.getBody();
                             switch (downloadResult.getState()){
@@ -95,8 +95,8 @@ public class Main {
                                     break;
                             }
                         }
-                        catch (FileNotFoundException e){
-                            System.out.printf(">> Warn: %s%n","Exact match for the file name was not found");
+                        else{
+                            System.out.println(">> Couldn't find an exact match for the filename");
                         }
                         break;
                     default:
