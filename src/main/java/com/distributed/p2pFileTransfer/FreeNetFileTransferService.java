@@ -94,7 +94,7 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
   }
 
   @Override
-  public Future<FileDownloadResult> downloadFile(String fileName) throws FileNotFoundException{
+  public Future<FileDownloadResult> downloadFile(String fileName) {
     String queryBody = getCommandBuilder().getSearchCommand(fileName);
     Callable<QueryResult> fileFinder =
         () -> {

@@ -6,14 +6,13 @@ import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 class Network {
 
   private final AbstractFileTransferService fileTransferService;
   private final Node boostrapServer;
-
-  //    private TreeMap<Integer, ArrayList<Node>> treeMap;
-  //    private Map routingTable = Collections.synchronizedMap(treeMap);
 
   private TreeMap<Integer, ArrayList<Node>> routingTable =
       new TreeMap<Integer, ArrayList<Node>>(Collections.reverseOrder());
@@ -22,11 +21,9 @@ class Network {
   private QueryDispatcher queryDispatcher;
   private ResponseHandler responseHandler;
 
-  private CommandBuilder cb;
+  private final CommandBuilder cb;
 
-  private Node
-      node; // ?????????????????????????????????????????????????????????????????????????????????
-  final String USERNAME = "USERNAME"; // ////////////////////////
+  final String USERNAME = "USERNAME";
   /**
    * Representation of nodes view of the network. Concrete implementations must connect with the
    * bootstrap server and set the neighbours. If the boostrap server refused connection constructor
@@ -74,8 +71,9 @@ class Network {
   Iterator<Node> getNeighbours() {
     // have to change the method params returned
     ArrayList<Node> list = new ArrayList<Node>();
-
-    for (Map.Entry<Integer, ArrayList<Node>> entityArry : routingTable.entrySet()) {
+    TreeMap<Integer, ArrayList<Node>> arr = new TreeMap<Integer, ArrayList<Node>>();
+    arr.putAll(routingTable);
+    for (Map.Entry<Integer, ArrayList<Node>> entityArry : arr.entrySet()) {
       list.addAll(entityArry.getValue());
     }
 
@@ -114,6 +112,15 @@ class Network {
           }
           // remove
           entityArry.getValue().remove(entity);
+        } else {
+          if (routingTable.containsKey(1)) {
+            routingTable.get(1).add(entity);
+          } else {
+            // if key file count doesn't exist
+            ArrayList<Node> temp = new ArrayList<Node>();
+            temp.add(entity);
+            routingTable.put(1, temp);
+          }
         }
       }
     }
@@ -158,6 +165,7 @@ class Network {
       } else if (state.equals("9998")) {
         System.out.println("failed, already registered to you, unregister first");
         // unregister from BS: implement method ?????????????????????????????????????????
+
       } else if (state.equals("9997")) {
         System.out.println("failed, registered to another user, try a different IP and port");
       } else if (state.equals("9996")) {
@@ -170,7 +178,29 @@ class Network {
    * Used to disconnect form bootstrap
    * @return future to be resolved when disconnect completed
    */
-  public Future<Result> disconnet(){
+  public Future<QueryResult> disconnet() {
+    Query query = Query.createQuery(cb.getUnRegisterCommand(USERNAME), cb.currentNode);
+
+    try {
+      QueryResult response = queryDispatcher.dispatchOne(query).get();
+      if (response.body != null) {
+        responseHandler = new ResponseHandler();
+        HashMap<String, String> formattedResponse =
+                responseHandler.handleUnRegisterResponse(response.body);
+        if(formattedResponse.get("value").equals("0")) {
+          return sendLeaveRequest(cb.currentNode);
+        }
+        else {
+          // failure
+          System.out.println(
+                  "error while unregistering. IP and port may not be in the registry or command is incorrect.");
+          return null;
+        }
+      }
+    } catch (InterruptedException | ExecutionException e) {
+      System.out.println(
+              "error while unregistering. Exception occured\n"+e);
+    }
     return null;
   }
 
@@ -178,18 +208,46 @@ class Network {
    * Used to show the routing table
    */
   public void printRoutingTable(){
-
+    ArrayList<Node> list;
+    TreeMap<Integer, ArrayList<Node>> arr = new TreeMap<>();
+    arr.putAll(routingTable);
+    for (Map.Entry<Integer, ArrayList<Node>> entityArray : arr.entrySet()) {
+      list = entityArray.getValue();
+      for(Node node: list) {
+        System.out.print("File Count: "+ entityArray.getKey());
+        System.out.print("  Node: " + node.getIpAddress()+ ":" + node.getPort());
+        System.out.println();
+      }
+    }
   }
 
   /**
    * Used to remove none responsive neighbours from the routing table
    */
   public void removeNeighbour(Node node){
-
+    for (Map.Entry<Integer, ArrayList<Node>> entityArry : routingTable.entrySet()) {
+      entityArry.getValue().removeIf(entity ->
+              node.getPort() == entity.getPort() && node.getIpAddress() == entity.getIpAddress());
+    }
   }
 
   private void sendJoinRequest(Node node) {
     Query query = Query.createQuery(cb.getJoinCommand(), node);
     queryDispatcher.dispatchOne(query);
+  }
+
+
+  private Future<QueryResult> sendLeaveRequest(Node node) {
+    Query query = Query.createQuery(cb.getLeaveCommand(), node);
+
+    //      QueryResult response = queryDispatcher.dispatchOne(query);
+//      if (response!=null) {
+//        responseHandler = new ResponseHandler();
+//        HashMap<String, String> formattedResponse =
+//                responseHandler.handleLeaveResponse(response.body);
+//        formattedResponse.get("val");
+//      }
+    return queryDispatcher.dispatchOne(query);
+
   }
 }
