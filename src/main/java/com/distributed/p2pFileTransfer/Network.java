@@ -6,6 +6,8 @@ import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 class Network {
 
@@ -163,6 +165,7 @@ class Network {
       } else if (state.equals("9998")) {
         System.out.println("failed, already registered to you, unregister first");
         // unregister from BS: implement method ?????????????????????????????????????????
+
       } else if (state.equals("9997")) {
         System.out.println("failed, registered to another user, try a different IP and port");
       } else if (state.equals("9996")) {
@@ -175,7 +178,7 @@ class Network {
    * Used to disconnect form bootstrap
    * @return future to be resolved when disconnect completed
    */
-  public Future<Result> disconnet() {
+  public Future<QueryResult> disconnet() {
     Query query = Query.createQuery(cb.getUnRegisterCommand(USERNAME), cb.currentNode);
 
     try {
@@ -185,21 +188,20 @@ class Network {
         HashMap<String, String> formattedResponse =
                 responseHandler.handleUnRegisterResponse(response.body);
         if(formattedResponse.get("value").equals("0")) {
-          sendLeaveRequest(cb.currentNode);
-          Result result =
-          return Future;
+          return sendLeaveRequest(cb.currentNode);
         }
         else {
           // failure
           System.out.println(
                   "error while unregistering. IP and port may not be in the registry or command is incorrect.");
-          return ;
+          return null;
         }
       }
     } catch (InterruptedException | ExecutionException e) {
       System.out.println(
               "error while unregistering. Exception occured\n"+e);
     }
+    return null;
   }
 
   /**
@@ -235,20 +237,17 @@ class Network {
   }
 
 
-  private void sendLeaveRequest(Node node) {
+  private Future<QueryResult> sendLeaveRequest(Node node) {
     Query query = Query.createQuery(cb.getLeaveCommand(), node);
 
-    try {
-      QueryResult response = queryDispatcher.dispatchOne(query).get();
+    //      QueryResult response = queryDispatcher.dispatchOne(query);
 //      if (response!=null) {
 //        responseHandler = new ResponseHandler();
 //        HashMap<String, String> formattedResponse =
 //                responseHandler.handleLeaveResponse(response.body);
 //        formattedResponse.get("val");
 //      }
-    } catch (InterruptedException | ExecutionException e) {
-      System.out.println("Error occured in sendLeaveRequest \n"+ e);
-    }
+    return queryDispatcher.dispatchOne(query);
 
   }
 }
