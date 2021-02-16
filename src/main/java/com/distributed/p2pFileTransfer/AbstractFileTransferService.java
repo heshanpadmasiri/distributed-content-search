@@ -22,6 +22,7 @@ public abstract class AbstractFileTransferService {
   private final CommandBuilder commandBuilder;
   private Node currentNode;
   private Thread queryListenerThread;
+  protected  Logger logger;
 
   public AbstractFileTransferService(FileHandler fileHandler, int port, Node bootstrapServer)
       throws SocketException, UnknownHostException, NodeNotFoundException {
@@ -33,12 +34,14 @@ public abstract class AbstractFileTransferService {
     queryListenerThread = new Thread(this.queryListener);
     queryListenerThread.start();
     this.network = new Network(this, bootstrapServer);
+    logger = Logger.getLogger(this.getClass().getName());
     setLoggers(Paths.get(""));
   }
 
   private void setLoggers(Path logDirectory) {
     Path logFilePath = Paths.get(logDirectory.toString(), "log");
     List<Logger> loggers = new LinkedList<>();
+    loggers.add(logger);
     loggers.add(Logger.getLogger(this.fileHandler.getClass().getName()));
     loggers.add(Logger.getLogger(this.queryListener.getClass().getName()));
     loggers.add(Logger.getLogger(this.queryDispatcher.getClass().getName()));

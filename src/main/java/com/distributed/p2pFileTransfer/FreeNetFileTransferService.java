@@ -5,6 +5,7 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -77,13 +78,15 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
                   .map(
                       each -> {
                         try {
-                          return each.get();
+                          return each.get(20, TimeUnit.SECONDS);
+                        } catch (TimeoutException ignored) {
+                           logger.log(Level.WARNING, "Query time out");
                         } catch (InterruptedException | ExecutionException e) {
                           e.printStackTrace();
                         }
                         return null;
                       })
-                  .collect(Collectors.toList());
+                  .filter(Objects::nonNull).collect(Collectors.toList());
           return results;
         };
     return executorService.submit(floodExecutor);
@@ -99,8 +102,8 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
           List<Query> queries = Query.createQuery(queryBody, neighbours);
           for (Query query : queries) {
             try {
-              QueryResult result =
-                  this.getQueryDispatcher().dispatchOne(query).get(20, TimeUnit.SECONDS);
+              Future<QueryResult> future = this.getQueryDispatcher().dispatchOne(query);
+              QueryResult result = future.get(20, TimeUnit.SECONDS);
               String[] data = result.getBody().split(" ");
               int numberOfFiles = Integer.parseInt(data[2]);
               if (numberOfFiles > 0) {
@@ -111,7 +114,9 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
                   }
                 }
               }
-            } catch (TimeoutException ignored) {
+            } catch (TimeoutException ex) {
+                logger.log(Level.WARNING, "Query time out");
+                this.getNetwork().removeNeighbour(query.destination);
             }
           }
           throw new FileNotFoundException();
