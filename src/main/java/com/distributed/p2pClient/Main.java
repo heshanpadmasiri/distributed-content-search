@@ -78,25 +78,20 @@ public class Main {
                         }
                         break;
                     case "download":
-                        try{
-                            Future<FileDownloadResult> downloadResponseFuture = client.downloadFile(fileName);
-                            FileDownloadResult downloadResult = downloadResponseFuture.get();
-                            String body = downloadResult.getBody();
-                            switch (downloadResult.getState()){
-                                case 0:
-                                    System.out.printf(">> Success: %s%n",body);
-                                    break;
-                                case 1:
-                                case 2:
-                                    System.out.printf(">> Error: %s%n",body);
-                                    break;
-                                default:
-                                    System.out.println(">> Issue with File Download");
-                                    break;
-                            }
-                        }
-                        catch (FileNotFoundException e){
-                            System.out.printf(">> Warn: %s%n","Exact match for the file name was not found");
+                        Future<FileDownloadResult> downloadResponseFuture = client.downloadFile(fileName);
+                        FileDownloadResult downloadResult = downloadResponseFuture.get();
+                        String body = downloadResult.getBody();
+                        switch (downloadResult.getState()){
+                            case 0:
+                                System.out.printf(">> Success: %s%n",body);
+                                break;
+                            case 1:
+                            case 2:
+                                System.out.printf(">> Error: %s%n",body);
+                                break;
+                            default:
+                                System.out.println(">> Issue with File Download");
+                                break;
                         }
                         break;
                     default:

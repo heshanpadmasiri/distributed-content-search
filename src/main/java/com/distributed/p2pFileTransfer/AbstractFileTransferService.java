@@ -1,8 +1,5 @@
 package com.distributed.p2pFileTransfer;
 
-import sun.rmi.runtime.Log;
-
-import java.io.File;
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -129,7 +126,7 @@ public abstract class AbstractFileTransferService {
     * @return future that resolves when shutdown completed
    */
   public Future<QueryResult> shutdown(){
-    return this.network.disconnet();
+    return this.network.disconnect();
   }
 
   /**
