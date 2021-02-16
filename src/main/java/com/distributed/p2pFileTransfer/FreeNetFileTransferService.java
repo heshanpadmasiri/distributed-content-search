@@ -5,6 +5,7 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -79,7 +80,7 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
                         try {
                           return each.get(20, TimeUnit.SECONDS);
                         } catch (TimeoutException ignored) {
-
+                           logger.log(Level.WARNING, "Query time out");
                         } catch (InterruptedException | ExecutionException e) {
                           e.printStackTrace();
                         }
@@ -114,6 +115,7 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
                 }
               }
             } catch (TimeoutException ex) {
+                logger.log(Level.WARNING, "Query time out");
                 this.getNetwork().removeNeighbour(query.destination);
             }
           }
