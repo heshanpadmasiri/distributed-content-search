@@ -61,7 +61,7 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
                           });
                 }
               });
-          return new ArrayList<>(files);
+          return files.stream().map(each -> each.replaceAll("_", " ")).collect(Collectors.toList());
         };
     return executorService.submit(searchExecutor);
   }
