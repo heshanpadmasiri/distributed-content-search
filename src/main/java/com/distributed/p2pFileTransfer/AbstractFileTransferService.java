@@ -84,28 +84,25 @@ public abstract class AbstractFileTransferService {
    * Used to download a file. Will download the first file that exactly matches the file name.
    *
    * @param fileName Name of the file to download
-   * @throws FileNotFoundException If no file is found that exactly matches the file name
    * @throws DestinationAlreadyExistsException If the destination file already exists. <b>This
    *     method will not overwrite existing files</b>
    * @return
    */
   public abstract Future<FileDownloadResult> downloadFile(String fileName)
-      throws FileNotFoundException, DestinationAlreadyExistsException;
+      throws  DestinationAlreadyExistsException;
 
   /**
    * Used to directly download a file without search for it in the network
    *
    * @param fileName Name of the file to download
    * @param source Node from which to download the file
-   * @throws FileNotFoundException If no file is found that exactly matches the file name in the
-   *     source
    * @throws DestinationAlreadyExistsException If the destination file already exists. <b>This
    *     method will not overwrite existing files</b>
    * @throws NodeNotFoundException If source node refused to connect
    * @return
    */
   public abstract Future<FileDownloadResult> downloadFileFrom(String fileName, Node source)
-      throws FileNotFoundException, DestinationAlreadyExistsException, NodeNotFoundException;
+      throws DestinationAlreadyExistsException, NodeNotFoundException;
 
   Network getNetwork() {
     return network;
