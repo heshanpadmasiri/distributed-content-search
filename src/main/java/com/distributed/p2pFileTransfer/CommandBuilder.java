@@ -37,7 +37,7 @@ public class CommandBuilder {
   public String getSearchCommand(String fileName) {
     assert !Pattern.matches(".*<id>.*", fileName);
     String body =
-        String.format("SER %s %d \"%s\" <id>", currentIp(), currentNode.getPort(), fileName);
+        String.format("SER %s %d \"%s\" <id>", currentIp(), currentNode.getPort(), fileName.replaceAll(" ", "_"));
     return composeWithLength(body);
   }
 

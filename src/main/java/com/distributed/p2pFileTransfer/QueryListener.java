@@ -114,7 +114,7 @@ class QueryListener implements Runnable {
           }
           break;
         case "SER":
-          String fileName = data[4].replaceAll("\"", "");
+          String fileName = data[4].replaceAll("\"", "").replaceAll("_", " ");
           UUID uuid = UUID.fromString(data[5]);
           FileSearchRunner fileSearchRunner = new FileSearchRunner(fileName, origin, uuid);
           executorService.execute(fileSearchRunner);
