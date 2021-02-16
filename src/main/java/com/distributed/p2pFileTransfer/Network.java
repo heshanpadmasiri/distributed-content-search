@@ -110,6 +110,8 @@ class Network {
           }
           // remove
           entityArry.getValue().remove(entity);
+        } else {
+          routingTable.get(1).add(entity);
         }
       }
     }
@@ -166,8 +168,31 @@ class Network {
    * Used to disconnect form bootstrap
    * @return future to be resolved when disconnect completed
    */
-  public Future<Result> disconnet(){
-    return null;
+  public Future<Result> disconnet() {
+    Query query = Query.createQuery(cb.getUnRegisterCommand(USERNAME), cb.currentNode);
+
+    try {
+      QueryResult response = queryDispatcher.dispatchOne(query).get();
+      if (response.body != null) {
+        responseHandler = new ResponseHandler();
+        HashMap<String, String> formattedResponse =
+                responseHandler.handleUnRegisterResponse(response.body);
+        if(formattedResponse.get("value").equals("0")) {
+          sendLeaveRequest(cb.currentNode);
+          Result result =
+          return Future;
+        }
+        else {
+          // failure
+          System.out.println(
+                  "error while unregistering. IP and port may not be in the registry or command is incorrect.");
+          return ;
+        }
+      }
+    } catch (InterruptedException | ExecutionException e) {
+      System.out.println(
+              "error while unregistering. Exception occured\n"+e);
+    }
   }
 
   /**
@@ -200,5 +225,23 @@ class Network {
   private void sendJoinRequest(Node node) {
     Query query = Query.createQuery(cb.getJoinCommand(), node);
     queryDispatcher.dispatchOne(query);
+  }
+
+
+  private void sendLeaveRequest(Node node) {
+    Query query = Query.createQuery(cb.getLeaveCommand(), node);
+
+    try {
+      QueryResult response = queryDispatcher.dispatchOne(query).get();
+//      if (response!=null) {
+//        responseHandler = new ResponseHandler();
+//        HashMap<String, String> formattedResponse =
+//                responseHandler.handleLeaveResponse(response.body);
+//        formattedResponse.get("val");
+//      }
+    } catch (InterruptedException | ExecutionException e) {
+      System.out.println("Error occured in sendLeaveRequest \n"+ e);
+    }
+
   }
 }
