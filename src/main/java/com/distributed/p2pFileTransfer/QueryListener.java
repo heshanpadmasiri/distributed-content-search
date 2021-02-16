@@ -118,6 +118,7 @@ class QueryListener implements Runnable {
           UUID uuid = UUID.fromString(data[5]);
           FileSearchRunner fileSearchRunner = new FileSearchRunner(fileName, origin, uuid);
           executorService.execute(fileSearchRunner);
+          break;
         case "JOIN":
           try {
             Node node = new Node(InetAddress.getByName(data[2]), Integer.parseInt(data[3]));
@@ -126,6 +127,7 @@ class QueryListener implements Runnable {
           } catch (UnknownHostException e) {
             e.printStackTrace();
           }
+          break;
         default:
           throw new IllegalStateException("Unexpected value: " + queryType);
       }
