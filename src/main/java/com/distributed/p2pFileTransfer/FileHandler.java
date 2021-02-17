@@ -1,5 +1,6 @@
 package com.distributed.p2pFileTransfer;
 
+import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 
 import java.util.Collections;
@@ -58,16 +59,19 @@ public class FileHandler{
         if (result.isDone()) {
             try {
                 FileDownloadResult response = result.get();
-                switch (response.state){
+                switch (response.getState()){
                     case 0:
                         this.logger.log(Level.INFO, String.format("%s downloadFile completed to %s ",fileName,destination));
                         break;
                     case 1:
                     case 2:
-                        this.logger.log(Level.INFO, "File Download failed");
+                        this.logger.log(Level.INFO, String.format("File Download failed: %s", response.getBody()));
+                        break;
+                    default:
+                        this.logger.log(Level.INFO, "Issue with File Download");
                         break;
                 }
-                this.logger.log(Level.INFO, String.valueOf(response.body));
+                this.logger.log(Level.INFO, String.valueOf(response.getBody()));
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
             }

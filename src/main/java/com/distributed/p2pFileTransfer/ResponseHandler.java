@@ -28,6 +28,28 @@ public class ResponseHandler {
         return response;
     }
 
+
+    public HashMap<String,String> handleUnRegisterResponse(String body) {
+        String [] params = body.split(" ");
+        String val = params[3];
+
+        HashMap<String,String> response = new HashMap<>();
+        response.put("value",val);
+
+        return response;
+    }
+
+    public HashMap<String,String> handleLeaveResponse(String body) {
+        String [] params = body.split(" ");
+        String val = params[3];
+
+        HashMap<String,String> response = new HashMap<>();
+        response.put("value",val);
+
+        return response;
+    }
+
+
 //    private void formatResponse() {
 //
 //    }
