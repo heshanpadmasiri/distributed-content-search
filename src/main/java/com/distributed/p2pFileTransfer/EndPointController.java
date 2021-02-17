@@ -16,15 +16,20 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.logging.FileHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @RestController
 public class EndPointController {
 
     private Storage fileStorage;
+    private Logger logger;
 
     @PostConstruct
     public void initialize() {
         fileStorage = new Storage(Configuration.getCacheDir(), Configuration.getLocalDir(), Configuration.getCacheSize(), this.getClass().getName());
+        logger = Logger.getLogger(FileHandler.class.getName());
     }
 
     /**
@@ -38,7 +43,7 @@ public class EndPointController {
     @RequestMapping("/file/{name:.+}")
     public ResponseEntity<Resource> downloadFile(HttpServletResponse res, @PathVariable("name") String fileName) throws IOException {
 
-        System.out.println("Attempting to download " + fileName);
+        logger.log(Level.INFO, "Attempting to download " + fileName);
         Boolean fileExists = fileStorage.checkFileExists(fileName);
 
         if (fileExists) {
@@ -53,7 +58,7 @@ public class EndPointController {
             String hexHash = fileStorage.getFileHash(file);
             res.setHeader("Hash", hexHash);
 
-            System.out.println("Serving file from the server");
+            logger.log(Level.INFO, "Serving file from the server");
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(resource);

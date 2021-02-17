@@ -61,7 +61,7 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
                           });
                 }
               });
-          return new ArrayList<>(files);
+          return files.stream().map(each -> each.replaceAll("_", " ")).collect(Collectors.toList());
         };
     return executorService.submit(searchExecutor);
   }
@@ -80,13 +80,14 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
                         try {
                           return each.get(20, TimeUnit.SECONDS);
                         } catch (TimeoutException ignored) {
-                           logger.log(Level.WARNING, "Query time out");
+                          logger.log(Level.WARNING, "Query time out");
                         } catch (InterruptedException | ExecutionException e) {
                           e.printStackTrace();
                         }
                         return null;
                       })
-                  .filter(Objects::nonNull).collect(Collectors.toList());
+                  .filter(Objects::nonNull)
+                  .collect(Collectors.toList());
           return results;
         };
     return executorService.submit(floodExecutor);
@@ -115,17 +116,19 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
                 }
               }
             } catch (TimeoutException ex) {
-                logger.log(Level.WARNING, "Query time out");
-                this.getNetwork().removeNeighbour(query.destination);
+              logger.log(Level.WARNING, "Query time out");
+              this.getNetwork().removeNeighbour(query.destination);
             }
           }
-          throw new FileNotFoundException();
+          return null;
         };
     try {
       QueryResult result = executorService.submit(fileFinder).get();
-      String[] data = result.getBody().split(" ");
-      Node source = new Node(InetAddress.getByName(data[3]), Integer.parseInt(data[4]));
-      return getFileHandler().downloadFileToLocal(source, fileName);
+      if (result != null) {
+        String[] data = result.getBody().split(" ");
+        Node source = new Node(InetAddress.getByName(data[3]), Integer.parseInt(data[4]));
+        return getFileHandler().downloadFileToLocal(source, fileName);
+      }
     } catch (InterruptedException | ExecutionException | UnknownHostException e) {
       e.printStackTrace();
     }
@@ -134,7 +137,7 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
 
   @Override
   public Future<FileDownloadResult> downloadFileFrom(String fileName, Node source)
-      throws FileNotFoundException, DestinationAlreadyExistsException, NodeNotFoundException {
+      throws DestinationAlreadyExistsException, NodeNotFoundException {
     return getFileHandler().downloadFileToLocal(source, fileName);
   }
 
