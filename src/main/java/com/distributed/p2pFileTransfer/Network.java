@@ -31,10 +31,8 @@ class Network {
    *
    * @param fileTransferService
    * @param boostrapServer
-   * @throws NodeNotFoundException If unable to connect with the boostrap server
    */
-  public Network(AbstractFileTransferService fileTransferService, Node boostrapServer)
-      throws NodeNotFoundException {
+  public Network(AbstractFileTransferService fileTransferService, Node boostrapServer) throws NodeNotFoundException{
     this.fileTransferService = fileTransferService;
     this.boostrapServer = boostrapServer;
     this.cb = fileTransferService.getCommandBuilder();
@@ -47,10 +45,36 @@ class Network {
         try {
           Query query = Query.createQuery(cb.getRegisterCommand(USERNAME), boostrapServer);
           response = queryDispatcher.dispatchOne(query).get();
-          if (response.state == 0) {
-            break;
-          }
-        } catch (ExecutionException | InterruptedException e) {
+          if (response.body != null) {
+            responseHandler = new ResponseHandler();
+            HashMap<String, String> formattedResponse =
+                    responseHandler.handleRegisterResponse(response.body);
+            String state = formattedResponse.get("no_nodes");
+            if (state.equals("0") || state.equals("1") || state.equals("2")) {
+              addInitialNeighbours(formattedResponse);
+              break;
+            }
+            else if (state.equals("9998")) {
+              System.out.println("failed, already registered to you, unregister first");
+              disconnect();
+            } else {
+              switch (state) {
+                case "9999":
+                  System.out.println("Error in command");
+                  break;
+                case "9997":
+                  System.out.println("failed, registered to another user, try a different IP and port");
+                  break;
+                case "9996":
+                  System.out.println("failed, can’t register. BS full");
+                  break;
+              }
+              break;
+            }
+
+            }
+
+          } catch (ExecutionException | InterruptedException e) {
           // e.printStackTrace();
           System.out.println("Error occured");
         }
@@ -58,9 +82,6 @@ class Network {
     } catch (SocketException e) {
       System.out.println(e);
     }
-
-    assert response != null;
-    addInitialNeighbours(response);
   }
 
   /**
@@ -126,59 +147,35 @@ class Network {
     }
   }
 
-  private void addInitialNeighbours(QueryResult response) {
-    // add the neighbour nodes returned by BS to the routing table
-    if (response.body != null) {
-      responseHandler = new ResponseHandler();
-      HashMap<String, String> formattedResponse =
-          responseHandler.handleRegisterResponse(response.body);
-
-      String state = formattedResponse.get("no_nodes");
-      if (state.equals("0") || state.equals("1") || state.equals("2")) {
+  private void addInitialNeighbours(HashMap<String, String> response) {
         this.routingTable = new TreeMap<>();
         routingTable.put(0, new ArrayList<>());
         try {
-          if (formattedResponse.get("IP_1") != null) {
-            Node node =
-                new Node(
-                    InetAddress.getByName(formattedResponse.get("IP_1")),
-                    Integer.parseInt(formattedResponse.get("port_1")));
+          if (response.get("IP_1") != null) {
+            Node node = new Node(
+                    InetAddress.getByName(response.get("IP_1")),
+                    Integer.parseInt(response.get("port_1")));
             routingTable.get(0).add(node);
             sendJoinRequest(node);
           }
-          if (formattedResponse.get("IP_2") != null) {
-            Node node =
-                new Node(
-                    InetAddress.getByName(formattedResponse.get("IP_1")),
-                    Integer.parseInt(formattedResponse.get("port_2")));
+          if (response.get("IP_2") != null) {
+            Node node = new Node(
+                    InetAddress.getByName(response.get("IP_1")),
+                    Integer.parseInt(response.get("port_2")));
             addNeighbour(node);
             routingTable.get(0).add(node);
             sendJoinRequest(node);
           }
-
-        } catch (UnknownHostException e) {
+        } catch (UnknownHostException unknownHostException) {
           System.out.println("IP error");
         }
-
-      } else if (state.equals("9999")) {
-        System.out.println("Error in command");
-      } else if (state.equals("9998")) {
-        System.out.println("failed, already registered to you, unregister first");
-        // unregister from BS: implement method ?????????????????????????????????????????
-
-      } else if (state.equals("9997")) {
-        System.out.println("failed, registered to another user, try a different IP and port");
-      } else if (state.equals("9996")) {
-        System.out.println("failed, can’t register. BS full");
-      }
-    }
   }
 
   /**
    * Used to disconnect form bootstrap
    * @return future to be resolved when disconnect completed
    */
-  public Future<QueryResult> disconnet() {
+  public Future<QueryResult> disconnect() {
     Query query = Query.createQuery(cb.getUnRegisterCommand(USERNAME), cb.currentNode);
 
     try {
