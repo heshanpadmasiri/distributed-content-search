@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
@@ -43,7 +44,7 @@ public abstract class AbstractFileTransferService {
     loggers.add(Logger.getLogger(this.queryListener.getClass().getName()));
     loggers.add(Logger.getLogger(this.queryDispatcher.getClass().getName()));
     loggers.add(Logger.getLogger(this.network.getClass().getName()));
-    loggers.add(Logger.getLogger(UnAcknowledgedQueryExecutor.class.getName()));
+    loggers.add(Logger.getLogger(Executor.class.getName()));
     try {
       java.util.logging.FileHandler fileHandler =
           new java.util.logging.FileHandler(logFilePath.toString());
@@ -56,7 +57,7 @@ public abstract class AbstractFileTransferService {
                 logger.setUseParentHandlers(false);
               });
     } catch (IOException e) {
-      e.printStackTrace();
+      System.out.println("Unable to setup file handler to log due to " + e.toString());
     }
   }
 
@@ -141,7 +142,7 @@ public abstract class AbstractFileTransferService {
     try {
       queryListenerThread.join();
     } catch (InterruptedException e) {
-      e.printStackTrace();
+      logger.log(Level.SEVERE, e.toString());
     }
   }
 }

@@ -73,7 +73,7 @@ public class FileHandler{
                 }
                 this.logger.log(Level.INFO, String.valueOf(response.getBody()));
             } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
+                logger.log(Level.SEVERE, e.toString());
             }
         }
         return result;
