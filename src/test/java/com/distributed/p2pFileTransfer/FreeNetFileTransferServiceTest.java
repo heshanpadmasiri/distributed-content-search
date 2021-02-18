@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -43,9 +44,9 @@ class FreeNetFileTransferServiceTest {
       List<String> result = queryResultFuture.get();
       assertNotNull(result);
       assertEquals(result.size(), 3);
-      assertTrue(result.contains("Lord_of_the_rings"));
-      assertTrue(result.contains("abLord_of_the_rings"));
-      assertTrue(result.contains("Lord_of_the_ringsab"));
+      assertTrue(result.contains("Lord of the rings"));
+      assertTrue(result.contains("abLord of the rings"));
+      assertTrue(result.contains("Lord of the ringsab"));
       assertFalse(result.contains("testFile"));
     } catch (InterruptedException | ExecutionException e) {
       assertNull(e);
@@ -87,7 +88,7 @@ class FreeNetFileTransferServiceTest {
   }
 
   @BeforeAll
-  static void beforeAll() throws UnknownHostException {
+  static void beforeAll() throws IOException {
     List<String> files =
         Stream.of("Lord of the rings", "abLord of the rings", "Lord of the ringsab", "testFile")
             .collect(Collectors.toList());
@@ -106,6 +107,8 @@ class FreeNetFileTransferServiceTest {
     local_dir = Paths.get(currentRelativePath.toString(), "local");
     cache_dir.toFile().mkdir();
     local_dir.toFile().mkdir();
+    File cacheFileList = Paths.get(cache_dir.toString(), "filelist.txt").toFile();
+    cacheFileList.createNewFile();
     config = new Properties();
     config.setProperty("cache_dir", cache_dir.toString());
     config.setProperty("local_dir", local_dir.toString());
