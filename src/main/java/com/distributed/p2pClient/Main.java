@@ -35,6 +35,7 @@ public class Main {
   }
 
   public static void main(String[] args) {
+    init();
     System.out.println(
         " _       __     __                             __           ______               _   __     __ \n"
             + "| |     / /__  / /________  ____ ___  ___     / /_____     / ____/_______  ___  / | / /__  / /_\n"
@@ -86,8 +87,21 @@ public class Main {
             System.out.println(helpString);
             break;
           case "exit":
-            System.out.println(">> Exiting....");
-            System.exit(0);
+            System.out.println(">> Disconnecting....");
+            QueryResult result = client.shutdown().get();
+            if (result != null) {
+              if (result.getState() == 0) {
+                System.out.println(">> Node successfully disconnected from the network");
+                System.exit(0);
+              } else {
+                System.out.println(">> Error: Disconnecting the node from the network failed");
+              }
+            } else {
+              System.out.println(">> Error: Disconnecting the node from the network failed");
+            }
+          case "routes":
+            client.printRoutingTable();
+            break;
           case "search":
             Future<List<String>> queryResultFuture = client.searchForFile(fileName);
             List<String> queryResult = queryResultFuture.get();
@@ -98,87 +112,26 @@ public class Main {
             } else {
               System.out.println(">> No matching files found");
             }
-            System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-            System.out.println();
-            FreeNetFileTransferService client = FreeNetFileTransferService.getInstance(config);
-            String helpString = String.join(System.lineSeparator()
-                    ,""
-                    , "search   <filename> : Search the matching files in the Grid,"
-                    , "download <filename> : Download the file from the Grid"
-                    , "exit                : Remove the current node from the Grid and exit"
-            );
-            Scanner scanner = new Scanner(System.in);
-            while (true){
-                System.out.println();
-                System.out.print(">> Enter command: ");
-                String query = scanner.nextLine();
-                String[] arguments = query.split(" ",2);
-                String command = arguments[0];
-                String fileName = "";
-                if (arguments.length == 2){
-                    fileName = arguments[1];
-                }
-                switch (command){
-                    case "help":
-                        System.out.println(helpString);
-                        break;
-                    case "exit":
-                        System.out.println(">> Disconnecting....");
-                        QueryResult result = client.shutdown().get();
-                        if (result != null){
-                            if (result.getState() == 0){
-                                System.out.println(">> Node successfully disconnected from the network");
-                                System.exit(0);
-                            }
-                            else{
-                                System.out.println(">> Error: Disconnecting the node from the network failed");
-                            }
-                        }
-                        else{
-                            System.out.println(">> Error: Disconnecting the node from the network failed");
-                        }
-                    case "routes":
-                        client.printRoutingTable();
-                        break;
-                    case "search":
-                        Future<List<String>> queryResultFuture = client.searchForFile(fileName);
-                        List<String> queryResult = queryResultFuture.get();
-                        if (queryResult.size() != 0) {
-                            for(String name : queryResult) {
-                                System.out.println("----> " + name);
-                            }
-                        }
-                        else {
-                            System.out.println(">> No matching files found");
-                        }
-                        break;
-                    case "download":
-                        Future<FileDownloadResult> downloadResponseFuture = client.downloadFile(fileName);
-                        if (downloadResponseFuture != null){
-                            FileDownloadResult downloadResult = downloadResponseFuture.get();
-                            String body = downloadResult.getBody();
-                            switch (downloadResult.getState()){
-                                case 0:
-                                    System.out.printf(">> Success: %s%n",body);
-                                    break;
-                                case 1:
-                                case 2:
-                                    System.out.printf(">> Error: %s%n",body);
-                                    break;
-                                default:
-                                    System.out.println(">> Issue with File Download");
-                                    break;
-                            }
-                        }
-                        else{
-                            System.out.println(">> Couldn't find an exact match for the filename");
-                        }
-                        break;
-                    default:
-                        System.out.println("Illegal command");
-                        System.out.println(helpString);
-                        break;
-                }
+            break;
+          case "download":
+            Future<FileDownloadResult> downloadResponseFuture = client.downloadFile(fileName);
+            if (downloadResponseFuture != null) {
+              FileDownloadResult downloadResult = downloadResponseFuture.get();
+              String body = downloadResult.getBody();
+              switch (downloadResult.getState()) {
+                case 0:
+                  System.out.printf(">> Success: %s%n", body);
+                  break;
+                case 1:
+                case 2:
+                  System.out.printf(">> Error: %s%n", body);
+                  break;
+                default:
+                  System.out.println(">> Issue with File Download");
+                  break;
+              }
+            } else {
+              System.out.println(">> Couldn't find an exact match for the filename");
             }
             break;
           default:
