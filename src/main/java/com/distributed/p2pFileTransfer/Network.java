@@ -180,7 +180,7 @@ class Network {
    * @return future to be resolved when disconnect completed
    */
   public Future<QueryResult> disconnect() {
-    Query query = Query.createQuery(cb.getUnRegisterCommand(USERNAME), cb.currentNode);
+    Query query = Query.createQuery(cb.getUnRegisterCommand(USERNAME), boostrapServer);
 
     try {
       QueryResult response = queryDispatcher.dispatchOne(query).get(20, TimeUnit.SECONDS);
