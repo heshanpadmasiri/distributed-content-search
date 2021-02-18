@@ -127,7 +127,7 @@ class Network {
     for (Map.Entry<Integer, ArrayList<Node>> entityArry : routingTable.entrySet()) {
       if(!flag) {
         for (Node entity : entityArry.getValue()) {
-            if (node.getPort() == entity.getPort() && node.getIpAddress() == entity.getIpAddress() && !flag) {
+            if (node.getPort() == entity.getPort() && node.getIpAddress() == entity.getIpAddress()) {
               // remove the node from current file count list and add
               flag = true;
               if (routingTable.containsKey(entityArry.getKey() + 1)) {
@@ -140,6 +140,7 @@ class Network {
               }
               // remove
               entityArry.getValue().remove(entity);
+              break;
             }
         }
       } else {
