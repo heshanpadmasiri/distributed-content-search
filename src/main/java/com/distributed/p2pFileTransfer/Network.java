@@ -8,6 +8,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 class Network {
 
@@ -22,6 +24,7 @@ class Network {
   private ResponseHandler responseHandler;
 
   private final CommandBuilder cb;
+  private final Logger logger;
 
   final String USERNAME = "USERNAME";
   /**
@@ -36,6 +39,7 @@ class Network {
     this.fileTransferService = fileTransferService;
     this.boostrapServer = boostrapServer;
     this.cb = fileTransferService.getCommandBuilder();
+    logger = Logger.getLogger(this.getClass().getName());
 
     // register with the BS
     QueryResult response = null;
@@ -55,18 +59,18 @@ class Network {
               break;
             }
             else if (state.equals("9998")) {
-              System.out.println("failed, already registered to you, unregister first");
+              logger.log(Level.INFO,"failed, already registered to you, unregister first" );
               disconnect();
             } else {
               switch (state) {
                 case "9999":
-                  System.out.println("Error in command");
+                  logger.log(Level.INFO,"Error in command");
                   break;
                 case "9997":
-                  System.out.println("failed, registered to another user, try a different IP and port");
+                  logger.log(Level.INFO,"failed, registered to another user, try a different IP and port");
                   break;
                 case "9996":
-                  System.out.println("failed, can’t register. BS full");
+                  logger.log(Level.INFO,"failed, can’t register. BS full");
                   break;
               }
               break;
@@ -76,11 +80,11 @@ class Network {
 
           } catch (ExecutionException | InterruptedException e) {
           // e.printStackTrace();
-          System.out.println("Error occured");
+          logger.log(Level.INFO,"Error occured");
         }
       }
     } catch (SocketException e) {
-      System.out.println(e);
+      logger.log(Level.WARNING,"Error: " + e);
     }
   }
 
@@ -167,7 +171,7 @@ class Network {
             sendJoinRequest(node);
           }
         } catch (UnknownHostException unknownHostException) {
-          System.out.println("IP error");
+          this.logger.log(Level.INFO,"IP error");
         }
   }
 
@@ -176,10 +180,10 @@ class Network {
    * @return future to be resolved when disconnect completed
    */
   public Future<QueryResult> disconnect() {
-    Query query = Query.createQuery(cb.getUnRegisterCommand(USERNAME), cb.currentNode);
+    Query query = Query.createQuery(cb.getUnRegisterCommand(USERNAME), boostrapServer);
 
     try {
-      QueryResult response = queryDispatcher.dispatchOne(query).get();
+      QueryResult response = queryDispatcher.dispatchOne(query).get(20, TimeUnit.SECONDS);
       if (response.body != null) {
         responseHandler = new ResponseHandler();
         HashMap<String, String> formattedResponse =
@@ -189,13 +193,13 @@ class Network {
         }
         else {
           // failure
-          System.out.println(
+          logger.log(Level.INFO,
                   "error while unregistering. IP and port may not be in the registry or command is incorrect.");
           return null;
         }
       }
-    } catch (InterruptedException | ExecutionException e) {
-      System.out.println(
+    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+      logger.log(Level.INFO,
               "error while unregistering. Exception occured\n"+e);
     }
     return null;
