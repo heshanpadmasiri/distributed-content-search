@@ -105,6 +105,8 @@ public class Main {
                     ,""
                     , "search   <filename> : Search the matching files in the Grid,"
                     , "download <filename> : Download the file from the Grid"
+                    , "routes              : Print routing table of the node"
+                    , "help                : Show help screen"
                     , "exit                : Remove the current node from the Grid and exit"
             );
             Scanner scanner = new Scanner(System.in);
