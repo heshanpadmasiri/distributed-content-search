@@ -27,7 +27,7 @@ public abstract class Executor implements Callable<QueryResult> {
     this.message = query.body;
     this.destination = query.destination;
     this.queryListener = queryListener;
-    logger = Logger.getLogger(UnAcknowledgedQueryExecutor.class.getName());
+    logger = Logger.getLogger(Executor.class.getName());
   }
 
   public abstract void notify(String message);
