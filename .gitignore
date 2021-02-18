@@ -39,3 +39,5 @@ test_data/node_1/cache/
 test_data/node_2/cache/
 
 log*
+
+test_data/node_3/cache/
