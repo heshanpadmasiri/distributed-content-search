@@ -23,7 +23,7 @@ public class ResponseHandler {
             response.put("IP_1",params[3]);
             response.put("port_1",params[4]);
             response.put("IP_2",params[5]);
-            response.put("port_3",params[6]);
+            response.put("port_2",params[6]);
         }
         return response;
     }
