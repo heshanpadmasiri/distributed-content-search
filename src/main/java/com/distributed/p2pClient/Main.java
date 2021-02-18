@@ -35,6 +35,7 @@ public class Main {
   }
 
   public static void main(String[] args) {
+    init();
     System.out.println(
         " _       __     __                             __           ______               _   __     __ \n"
             + "| |     / /__  / /________  ____ ___  ___     / /_____     / ____/_______  ___  / | / /__  / /_\n"
