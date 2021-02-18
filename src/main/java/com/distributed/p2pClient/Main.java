@@ -3,6 +3,7 @@ package com.distributed.p2pClient;
 import com.distributed.p2pFileTransfer.FileDownloadResult;
 import com.distributed.p2pFileTransfer.FileNotFoundException;
 import com.distributed.p2pFileTransfer.FreeNetFileTransferService;
+import com.distributed.p2pFileTransfer.QueryResult;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -63,8 +64,23 @@ public class Main {
                         System.out.println(helpString);
                         break;
                     case "exit":
-                        System.out.println(">> Exiting....");
-                        System.exit(0);
+                        System.out.println(">> Disconnecting....");
+                        QueryResult result = client.shutdown().get();
+                        if (result != null){
+                            if (result.getState() == 0){
+                                System.out.println(">> Node successfully disconnected from the network");
+                                System.exit(0);
+                            }
+                            else{
+                                System.out.println(">> Error: Disconnecting the node from the network failed");
+                            }
+                        }
+                        else{
+                            System.out.println(">> Error: Disconnecting the node from the network failed");
+                        }
+                    case "routes":
+                        client.printRoutingTable();
+                        break;
                     case "search":
                         Future<List<String>> queryResultFuture = client.searchForFile(fileName);
                         List<String> queryResult = queryResultFuture.get();
