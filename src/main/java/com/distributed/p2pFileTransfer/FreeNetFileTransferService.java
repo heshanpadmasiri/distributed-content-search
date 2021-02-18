@@ -14,7 +14,7 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
   private static FreeNetFileTransferService instance;
   private ExecutorService executorService;
 
-  private FreeNetFileTransferService(FileHandler fileHandler, int port, Node boostrapServer)
+    private FreeNetFileTransferService(FileHandler fileHandler, int port, Node boostrapServer)
       throws SocketException, UnknownHostException, NodeNotFoundException {
     super(fileHandler, port, boostrapServer);
     this.executorService = Executors.newCachedThreadPool();
@@ -82,7 +82,7 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
                         } catch (TimeoutException ignored) {
                           logger.log(Level.WARNING, "Query time out");
                         } catch (InterruptedException | ExecutionException e) {
-                          e.printStackTrace();
+                          logger.log(Level.SEVERE, e.toString());
                         }
                         return null;
                       })
@@ -130,7 +130,7 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
         return getFileHandler().downloadFileToLocal(source, fileName);
       }
     } catch (InterruptedException | ExecutionException | UnknownHostException e) {
-      e.printStackTrace();
+      logger.log(Level.SEVERE, e.toString());
     }
     return null;
   }
