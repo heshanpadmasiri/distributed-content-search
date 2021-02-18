@@ -44,7 +44,7 @@ public abstract class AbstractFileTransferService {
     loggers.add(Logger.getLogger(this.queryListener.getClass().getName()));
     loggers.add(Logger.getLogger(this.queryDispatcher.getClass().getName()));
     loggers.add(Logger.getLogger(this.network.getClass().getName()));
-    loggers.add(Logger.getLogger(UnAcknowledgedQueryExecutor.class.getName()));
+    loggers.add(Logger.getLogger(Executor.class.getName()));
     try {
       java.util.logging.FileHandler fileHandler =
           new java.util.logging.FileHandler(logFilePath.toString());
