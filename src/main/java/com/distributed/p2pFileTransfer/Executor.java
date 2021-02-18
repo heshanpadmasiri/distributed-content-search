@@ -38,15 +38,20 @@ class AcknowledgedQueryExecutor extends Executor {
   private final Object monitor = new Object();
   private String response;
   private boolean responseReceived = false;
+  private String expectedResponseHeader;
 
   public AcknowledgedQueryExecutor(
       Query query, DatagramSocket socket, QueryListener queryListener) {
     super(query, socket, queryListener);
+    expectedResponseHeader = String.format("%sOK",query.body.split(" ")[1]);
   }
 
   @Override
   public void notify(String message) {
-    // todo : check if the message is a response for the message we send
+    String responseHeader = message.split(" ")[1];
+    if (!responseHeader.equals(expectedResponseHeader)){
+      return;
+    }
     response = message;
     responseReceived = true;
     logger.log(Level.INFO, String.format("Message received %s for query %s", message, query.id));
