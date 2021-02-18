@@ -164,7 +164,7 @@ class FreeNetFileTransferServiceTest {
         }
         String[] data = received.split(" ");
         UUID id = UUID.fromString(data[data.length - 1]);
-        String finalTargetQuery = targetQuery;
+        String finalTargetQuery = targetQuery.replaceAll("_", " ");
         List<String> matchingFiles =
             filesInNode.stream()
                 .filter(
