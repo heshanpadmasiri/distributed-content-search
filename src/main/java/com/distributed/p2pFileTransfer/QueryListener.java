@@ -125,7 +125,7 @@ class QueryListener implements Runnable {
             JoinRunner joinRunner = new JoinRunner(node);
             executorService.execute(joinRunner);
           } catch (UnknownHostException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.toString());
           }
           break;
         default:

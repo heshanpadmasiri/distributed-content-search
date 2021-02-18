@@ -119,7 +119,7 @@ class FileSearchQueryExecutor extends AcknowledgedQueryExecutor {
                     } catch (NullPointerException ignored) {
 
                     } catch (InterruptedException | ExecutionException e) {
-                      e.printStackTrace();
+                      logger.log(Level.SEVERE, e.toString());
                     }
                   });
         } catch (UnknownHostException e) {
