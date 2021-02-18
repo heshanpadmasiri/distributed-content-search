@@ -70,6 +70,8 @@ public abstract class AbstractFileTransferService {
    */
   public abstract Future<List<String>> searchForFile(String query);
 
+  protected abstract Future<List<String>> searchForFileSkippingSource(String query, Node source);
+
   /**
    * Use to flood the network with a query and get the response
    *

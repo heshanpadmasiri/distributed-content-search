@@ -8,13 +8,14 @@ import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
 
 public class FreeNetFileTransferService extends AbstractFileTransferService {
 
   private static FreeNetFileTransferService instance;
   private ExecutorService executorService;
 
-    private FreeNetFileTransferService(FileHandler fileHandler, int port, Node boostrapServer)
+  private FreeNetFileTransferService(FileHandler fileHandler, int port, Node boostrapServer)
       throws SocketException, UnknownHostException, NodeNotFoundException {
     super(fileHandler, port, boostrapServer);
     this.executorService = Executors.newCachedThreadPool();
@@ -44,10 +45,20 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
 
   @Override
   public Future<List<String>> searchForFile(String query) {
+    return searchForFileSkippingSource(query, null);
+  }
+
+  @Override
+  protected Future<List<String>> searchForFileSkippingSource(String query, Node source) {
     Callable<List<String>> searchExecutor =
         () -> {
           String queryBody = getCommandBuilder().getSearchCommand(query);
-          List<QueryResult> results = floodNetwork(queryBody).get();
+          List<QueryResult> results;
+          if (source != null) {
+            results = floodNetwork(queryBody, Collections.singleton(source)).get();
+          } else {
+            results = floodNetwork(queryBody).get();
+          }
           Set<String> files = new TreeSet<>();
           results.forEach(
               result -> {
@@ -66,12 +77,17 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
     return executorService.submit(searchExecutor);
   }
 
-  @Override
-  protected Future<List<QueryResult>> floodNetwork(String queryBody) {
+  protected Future<List<QueryResult>> floodNetwork(String queryBody, Set<Node> skip) {
     Callable<List<QueryResult>> floodExecutor =
         () -> {
           List<Node> neighbours = new LinkedList<>();
-          this.getNetwork().getNeighbours().forEachRemaining(neighbours::add);
+          Iterable<Node> iterable = () -> this.getNetwork().getNeighbours();
+          StreamSupport.stream(iterable.spliterator(), true)
+              .filter(
+                  each -> {
+                    return !skip.contains(each);
+                  })
+              .forEach(neighbours::add);
           List<Query> queries = Query.createQuery(queryBody, neighbours);
           List<QueryResult> results =
               this.getQueryDispatcher().dispatchAll(queries).stream()
@@ -91,6 +107,11 @@ public class FreeNetFileTransferService extends AbstractFileTransferService {
           return results;
         };
     return executorService.submit(floodExecutor);
+  }
+
+  @Override
+  protected Future<List<QueryResult>> floodNetwork(String queryBody) {
+    return floodNetwork(queryBody, Collections.<Node>emptySet());
   }
 
   @Override

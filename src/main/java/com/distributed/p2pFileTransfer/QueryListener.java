@@ -150,12 +150,15 @@ class QueryListener implements Runnable {
       FileHandler fileHandler = fileTransferService.getFileHandler();
       List<String> files = fileHandler.searchForFile(searchQuery);
       Query responseQuery = null;
-      if (files.size() == 0) {
-        try {
-          files = fileTransferService.searchForFile(searchQuery).get();
-        } catch (InterruptedException | ExecutionException e) {
-          e.printStackTrace();
+      try {
+        List<String> neighbourFiles = fileTransferService.searchForFileSkippingSource(searchQuery,sender).get();
+        for (String file : neighbourFiles) {
+           if(!files.contains(file)){
+             files.add(file);
+           }
         }
+      } catch (InterruptedException | ExecutionException e) {
+        logger.log(Level.SEVERE, e.toString());
       }
       String body = fileTransferService.getCommandBuilder().getSearchOkCommand(files, queryId);
       responseQuery = Query.createQuery(body, sender);
