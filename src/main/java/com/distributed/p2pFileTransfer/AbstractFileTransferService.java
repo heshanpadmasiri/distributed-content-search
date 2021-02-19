@@ -5,6 +5,7 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -69,6 +70,8 @@ public abstract class AbstractFileTransferService {
    * @return list of files matching the search query
    */
   public abstract Future<List<String>> searchForFile(String query);
+
+  protected abstract Future<List<String>> searchForFileSkippingSource(String query, Node source);
 
   /**
    * Use to flood the network with a query and get the response
@@ -135,6 +138,22 @@ public abstract class AbstractFileTransferService {
    */
   public void printRoutingTable(){
     this.network.printRoutingTable();
+  }
+
+  /**
+   * Use to get the number of queries received
+   * @return number of queries received
+   */
+  public long getNumberOfQueriesReceived(){
+    return this.queryListener.getQueryCount();
+  }
+
+  /**
+   * Use to get the number of queries send
+   * @return number of queries send
+   */
+  public long getNumberOfQueriesDispatched(){
+    return this.queryDispatcher.getDispatchedCount();
   }
 
   void stop() {
