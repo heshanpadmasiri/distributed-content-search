@@ -12,6 +12,7 @@ class QueryDispatcher {
   private DatagramSocket socket;
   private ExecutorService executorService;
   private Logger logger;
+  private long dispatchedCount = 0;
 
   QueryDispatcher(AbstractFileTransferService fileTransferService)
       throws SocketException {
@@ -62,6 +63,7 @@ class QueryDispatcher {
    * @return result of query
    */
   Future<QueryResult> dispatchOne(Query query) {
+    dispatchedCount++;
     Executor executor = getQueryExecutor(query);
     return executorService.submit(executor);
   }
@@ -73,6 +75,7 @@ class QueryDispatcher {
    * @return results of all the queries
    */
   List<Future<QueryResult>> dispatchAll(List<Query> queries) {
+    dispatchedCount += queries.size();
     return queries.stream().map(this::dispatchOne).collect(Collectors.toList());
   }
 
@@ -84,6 +87,7 @@ class QueryDispatcher {
    * @return result of any successful queries if any, else failure
    */
   Future<QueryResult> dispatchAny(List<Query> queries) {
+    dispatchedCount += queries.size();
     List<Executor> executors = queries.stream().map(this::getQueryExecutor).collect(Collectors.toList());
     Callable<QueryResult> dispatchTack = () -> {
       QueryResult result = null;
@@ -95,5 +99,9 @@ class QueryDispatcher {
       return result;
     };
     return executorService.submit(dispatchTack);
+  }
+
+  public long getDispatchedCount() {
+    return dispatchedCount;
   }
 }
