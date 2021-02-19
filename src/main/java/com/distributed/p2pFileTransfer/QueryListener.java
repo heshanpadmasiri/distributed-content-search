@@ -3,10 +3,11 @@ package com.distributed.p2pFileTransfer;
 import java.io.IOException;
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
 
 class QueryListener implements Runnable {
   private final AbstractFileTransferService fileTransferService;
@@ -15,6 +16,7 @@ class QueryListener implements Runnable {
   private boolean terminate = false;
   private final HashMap<Node, List<Executor>> pendingExecutors;
   private Logger logger;
+  private long queryCount = 0;
 
   public QueryListener(AbstractFileTransferService fileTransferService, int port)
       throws SocketException {
@@ -39,6 +41,7 @@ class QueryListener implements Runnable {
       DatagramPacket incoming = new DatagramPacket(buffer, buffer.length);
       try {
         socket.receive(incoming);
+        queryCount++;
         String message = new String(buffer).split("\0")[0];
         Node origin = new Node(incoming.getAddress(), incoming.getPort());
         executorService.submit(new ListenerThread(message, origin));
@@ -84,6 +87,10 @@ class QueryListener implements Runnable {
 
   public void stop() {
     terminate = true;
+  }
+
+  public long getQueryCount() {
+    return queryCount;
   }
 
   private class ListenerThread implements Runnable {
