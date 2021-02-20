@@ -124,9 +124,6 @@ class QueryListener implements Runnable {
           break;
         case "SER":
           String fileName = data[4].replaceAll("\"", "").replaceAll("_", " ");
-          if(pendingSearchQueries.contains(fileName)){
-            break;
-          }
           UUID uuid = UUID.fromString(data[5]);
           FileSearchRunner fileSearchRunner = new FileSearchRunner(fileName, origin, uuid);
           executorService.execute(fileSearchRunner);
@@ -159,15 +156,30 @@ class QueryListener implements Runnable {
 
     @Override
     public void run() {
+      Query responseQuery;
+      if (pendingSearchQueries.contains(searchQuery)){
+        String body = fileTransferService.getCommandBuilder().getSearchOkCommand(Collections.singletonList("<ignore>"), queryId);
+        responseQuery = Query.createQuery(body, sender);
+        try {
+          QueryResult result =
+                  fileTransferService.getQueryDispatcher().dispatchOne(responseQuery).get();
+          logger.log(
+                  Level.INFO,
+                  String.format(
+                          "response %s send to message id %s", responseQuery.body, queryId.toString()));
+        } catch (InterruptedException | ExecutionException e) {
+          e.printStackTrace();
+        }
+        return;
+      }
       pendingSearchQueries.add(searchQuery);
       FileHandler fileHandler = fileTransferService.getFileHandler();
       List<String> files = fileHandler.searchForFile(searchQuery);
-      Query responseQuery = null;
       try {
         List<String> neighbourFiles = fileTransferService.searchForFileSkippingSource(searchQuery,sender).get();
         pendingSearchQueries.remove(searchQuery);
         for (String file : neighbourFiles) {
-           if(!files.contains(file)){
+           if(!file.equals("<ignore>") && !files.contains(file)){
              files.add(file);
            }
         }
