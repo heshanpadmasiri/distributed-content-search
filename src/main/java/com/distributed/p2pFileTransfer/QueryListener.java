@@ -3,6 +3,7 @@ package com.distributed.p2pFileTransfer;
 import java.io.IOException;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -17,6 +18,7 @@ class QueryListener implements Runnable {
   private final HashMap<Node, List<Executor>> pendingExecutors;
   private Logger logger;
   private long queryCount = 0;
+  private final Set<String> pendingSearchQueries = ConcurrentHashMap.newKeySet();
 
   public QueryListener(AbstractFileTransferService fileTransferService, int port)
       throws SocketException {
@@ -122,6 +124,9 @@ class QueryListener implements Runnable {
           break;
         case "SER":
           String fileName = data[4].replaceAll("\"", "").replaceAll("_", " ");
+          if(pendingSearchQueries.contains(fileName)){
+            break;
+          }
           UUID uuid = UUID.fromString(data[5]);
           FileSearchRunner fileSearchRunner = new FileSearchRunner(fileName, origin, uuid);
           executorService.execute(fileSearchRunner);
@@ -154,11 +159,13 @@ class QueryListener implements Runnable {
 
     @Override
     public void run() {
+      pendingSearchQueries.add(searchQuery);
       FileHandler fileHandler = fileTransferService.getFileHandler();
       List<String> files = fileHandler.searchForFile(searchQuery);
       Query responseQuery = null;
       try {
         List<String> neighbourFiles = fileTransferService.searchForFileSkippingSource(searchQuery,sender).get();
+        pendingSearchQueries.remove(searchQuery);
         for (String file : neighbourFiles) {
            if(!files.contains(file)){
              files.add(file);
