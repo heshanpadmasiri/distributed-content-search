@@ -145,7 +145,9 @@ class Network {
             Node node = new Node(
                     InetAddress.getByName(response.get("IP_1")),
                     Integer.parseInt(response.get("port_1")));
-            routingTable.get(0).add(node);
+            if(!routingTable.get(0).contains(node)){
+              routingTable.get(0).add(node);
+            }
             sendJoinRequest(node);
           }
           if (response.get("IP_2") != null) {
@@ -153,7 +155,9 @@ class Network {
                     InetAddress.getByName(response.get("IP_1")),
                     Integer.parseInt(response.get("port_2")));
             addNeighbour(node);
-            routingTable.get(0).add(node);
+            if(!routingTable.get(0).contains(node)){
+              routingTable.get(0).add(node);
+            }
             sendJoinRequest(node);
           }
         } catch (UnknownHostException unknownHostException) {
