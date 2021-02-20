@@ -121,42 +121,19 @@ class Network {
    * @param node new neighbour
    */
   void addNeighbour(Node node) {
-    // if the neighbour is found through a search ??????????????????
-    // check if the node is already in the routing table
-    boolean flag = false;
-    for (Map.Entry<Integer, ArrayList<Node>> entityArry : routingTable.entrySet()) {
-      if(!flag) {
-        for (Node entity : entityArry.getValue()) {
-            if (node.getPort() == entity.getPort() && node.getIpAddress() == entity.getIpAddress()) {
-              // remove the node from current file count list and add
-              flag = true;
-              if (routingTable.containsKey(entityArry.getKey() + 1)) {
-                routingTable.get(entityArry.getKey() + 1).add(entity);
-              } else {
-                // if key file count doesn't exist
-                ArrayList<Node> temp = new ArrayList<Node>();
-                temp.add(entity);
-                routingTable.put(entityArry.getKey() + 1, temp);
-              }
-              // remove
-              entityArry.getValue().remove(entity);
-              break;
-            }
-        }
-      } else {
+    int count = 0;
+    for(Integer fileCount: routingTable.keySet()){
+      List<Node> nodes = routingTable.get(fileCount);
+      if (nodes.contains(node)){
+        nodes.remove(node);
+        count = fileCount+1;
         break;
       }
     }
-    // if node isn't already present in the routing table
-    if(!flag) {
-        if (routingTable.containsKey(1)) {
-          routingTable.get(1).add(node);
-        } else {
-          // if key file count doesn't exist
-          ArrayList<Node> temp = new ArrayList<Node>();
-          temp.add(node);
-          routingTable.put(1, temp);
-        }
+    if (routingTable.containsKey(count)){
+      routingTable.get(count).add(node);
+    } else {
+      routingTable.put(count, new ArrayList<>(Collections.singletonList(node)));
     }
   }
 
